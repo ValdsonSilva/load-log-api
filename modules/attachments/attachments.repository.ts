@@ -1,8 +1,8 @@
-import { Prisma } from "../../lib/generated/prisma/client.js";
+import { Prisma } from "../../lib/generated/prisma/index.js";
 import { prisma } from "../../lib/prisma.js";
 
 export class AttachmentsRepository {
-    create(data: Prisma.AttachmentCreateManyInput) {
+    create(data: Prisma.AttachmentCreateInput) {
         return prisma.attachment.create({ data });
     }
 
