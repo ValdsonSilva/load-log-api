@@ -1,0 +1,642 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//
+// ENUMS
+//
+
+// tipos de carretas/caminhões
+enum LoadType {
+  DRY_VAN
+  REEFER
+  FLATBED
+  STEPDECK
+  POWER_ONLY
+  OTHER
+}
+
+// modo de carregamento
+enum LoadMode {
+  LIVE_LIVE
+  LIVE_DROP
+  DROP_LIVE
+  DROP_DROP
+}
+
+// status atual da carga
+enum LoadStatus {
+  PRE_TRIP
+  DRIVING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// contexto operacional do motorista
+enum DriverOperatingAs {
+  OWNER_OPERATOR_OWN_AUTHORITY
+  COMPANY_DRIVER_UNDER_AUTHORITY
+  LEASED_ON_UNDER_COMPANY_AUTHORITY
+}
+
+// tipos eventos de paradas
+enum StopType {
+  PICKUP
+  DELIVERY
+  STOP_OFF
+}
+
+// tipos de agendamento (se refere a como funciona o processo de agendamento no local de carregamento/descarga)
+enum AppointmentType {
+  FCFS // firt-come, first-served
+  APPOINTMENT_REQUIRED // agendameto prévio
+  UNKNOWN
+}
+
+// eventos de manuseio (se refere a como a carga será manuseada no local)
+enum HandlingType {
+  LIVE_LOAD // carregamento com motorista presente
+  LIVE_UNLOAD // descarregamento com motorista presente
+  DROP_HOOK // troca de trailer sem motorista presente
+  UNKNOWN
+}
+
+// tipos de calculo de tarifa
+enum RateType {
+  FLAT
+  PER_MILE
+  OTHER
+}
+
+// metodo de pagamento
+enum PaymentMethod {
+  FACTORING
+  QUICK_PAY
+  STANDARD
+}
+
+// provedores de rastreamento
+enum TrackingProvider {
+  MACROPOINT
+  PROJECT44
+  OTHER
+}
+
+// serviçoes adicionais relacionados a tarifa 
+enum AccessorialType {
+  DRIVER_ASSIST
+  HAZMAT
+  REEFER_FUEL
+  TARP
+  STOP_OFF
+  OTHER
+}
+
+// tipos de anexos/documentos
+enum AttachmentType {
+  RATE_CONFIRMATION
+  BOL_PHOTO
+  POD
+  SIGNED_BOL
+  LUMPER_RECEIPT
+  SCALE_TICKET
+  FUEL_RECEIPT
+  OTHER
+}
+
+// eventos principais da linha do tempo (âncoras para o status da carga)
+enum TimelineEventType {
+  // Core spine events (examples do doc)
+  ARRIVED_AT_SHIPPER
+  CHECKED_IN
+  DOOR_ASSIGNED
+  LOAD_START
+  LOAD_END
+  LEFT_SHIPPER
+  SCALE_STOP
+  ARRIVED_AT_RECEIVER
+  UNLOAD_START
+  UNLOAD_END
+  LEFT_RECEIVER
+  LOAD_COMPLETED
+
+  // Context events (delays/notes)
+  DELAY_TRAFFIC
+  DELAY_WEATHER
+  DELAY_ACCIDENT
+  NOTE
+  OTHER
+}
+
+// como o evento foi criado (manual do motorista, gps automático, importação de outro sistema)
+enum TimelineEventSource {
+  MANUAL
+  AUTO_GPS
+  IMPORTED
+}
+
+// tipo de disputa relacionada a uma carga
+enum DisputeType {
+  DETENTION
+  LUMPER
+  TONU
+  RATE_MISMATCH
+  TRACKING_PENALTY
+  OTHER
+}
+
+// estatus de uma disputa
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+// assinatura/plano do usuário
+enum PlanType {
+  BETA
+  FREE
+  PREMIUM
+}
+
+// status da assinatura do usuário
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum SubscriptionSource {
+  INVITATION
+  PAID
+  PROMO
+  MANUAL
+}
+
+enum InvitationCodeStatus {
+  ACTIVE
+  DISABLED
+  EXPIRED
+}
+
+//
+// MODELS
+//
+
+model User {
+  id              String  @id @default(uuid())
+  email           String  @unique
+  passwordHash    String
+  name            String?
+  phone           String?
+  defaultTimeZone String? // IANA tz, ex: "America/Chicago"
+
+  loads Load[]
+
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  timelineEvents         TimelineEvent[]
+  timelineEventRevisions TimelineEventRevision[]
+  loadExports            LoadExport[]
+  attachments            Attachment[]
+  disputes               Dispute[]
+  subscription           Subscription?
+  invitationCodes        InvitationCode[]
+  invitationRedemptions  InvitationRedemption[]
+}
+
+model Load {
+  id String @id @default(uuid())
+
+  // Driver context
+  driverId          String
+  driver            User              @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  driverOperatingAs DriverOperatingAs
+
+  // Load identity (core)
+  loadNumber       String // "Load ID / Load Number" (external anchor)
+  proNumber        String?
+  bolNumber        String?
+  bookingRefNumber String?
+  trailerNumber    String?
+  containerNumber  String?
+  sealNumber       String?
+  commodityDesc    String?
+
+  // References & IDs (tier 2)
+  pickupNumber String? // "pickup ID" do local de carregamento, se necessario
+  poNumber     String? // "numero do pedido" do cliente, se necessário
+
+  // Type/mode/status
+  loadType LoadType // tipo de carga
+  mode     LoadMode // modo de carregamento
+  status   LoadStatus @default(PRE_TRIP)
+
+  // Timeline anchor at creation (driver time + tz + GPS)
+  createdAt        DateTime @default(now()) // stored UTC
+  createdTimeZone  String? // IANA tz captured at creation
+  createdLatitude  Decimal? @db.Decimal(9, 6)
+  createdLongitude Decimal? @db.Decimal(9, 6)
+
+  // Quick listing helpers (optional; can be derived from stops)
+  expectedPickupCity    String?
+  expectedPickupState   String?
+  expectedDeliveryCity  String?
+  expectedDeliveryState String?
+
+  // Parties snapshot (broker/dispatcher/carrier) — dispute-ready
+  brokerCompanyName String // nome da corretora (se aplicável)
+  brokerMcNumber    String? // numero MC da corretora
+  brokerPhone       String?
+  brokerEmail       String?
+  brokerAgentName   String?
+  brokerAgentPhone  String?
+  brokerAgentEmail  String?
+
+  dispatcherName        String? // nome do despachante
+  dispatcherCompanyName String? // nome da empresa do despachante
+  dispatcherPhone       String?
+  dispatcherEmail       String?
+
+  carrierCompanyName String? // nome da transportadora 
+  carrierMcNumber    String? // numero MC da transportadora
+  carrierDotNumber   String? // numero DOT da transportadora
+  carrierMainPhone   String?
+
+  // 1:1 spec blocks
+  rateAgreement RateAgreement?
+  equipmentSpec EquipmentSpec?
+  trackingReq   TrackingRequirement?
+  penaltyTerms  PenaltyTerms?
+
+  // Stops & timeline
+  stops          Stop[]
+  timelineEvents TimelineEvent[]
+  attachments    Attachment[] // load-level docs (rate conf, BOL photos, etc.)
+
+  updatedAt   DateTime     @updatedAt
+  loadExports LoadExport[]
+  disputes    Dispute[]
+
+  @@unique([driverId, loadNumber])
+  @@index([loadNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Stop {
+  id     String @id @default(uuid())
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  type     StopType
+  sequence Int // 1..N (permite futuro multi-stop)
+
+  facilityName String
+  phone        String?
+
+  // Full address (required no doc)
+  street1    String
+  street2    String?
+  city       String
+  state      String
+  postalCode String
+  country    String  @default("US")
+
+  // Appointment / operating
+  appointmentType     AppointmentType @default(UNKNOWN)
+  appointmentAt       DateTime? // stored UTC
+  operatingHoursText  String? // free text
+  checkInInstructions String?
+
+  // Dock/door info (optional at creation, often filled later)
+  dockDoorInfo String?
+
+  // Special requirements (lumper/PPE/ID/guard shack)
+  lumperRequired      Boolean @default(false)
+  ppeRequired         Boolean @default(false)
+  idRequired          Boolean @default(false)
+  guardShackCheckIn   Boolean @default(false)
+  specialInstructions String?
+
+  // Live vs Drop, etc.
+  handlingType HandlingType @default(UNKNOWN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([loadId, sequence])
+  @@index([loadId, type])
+}
+
+// tabela principal de termos de tarifa
+model RateAgreement {
+  id     String @id @default(uuid())
+  loadId String @unique
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  rateAmount    Decimal       @db.Decimal(12, 2) // valor da tarifa
+  rateType      RateType // variavel de calculo de tarifa
+  quotedMiles   Int? // milhas cotadas
+  paymentMethod PaymentMethod @default(STANDARD) // metodo de pagamento
+  quickPayFee   Decimal?      @db.Decimal(12, 2) // taxa adicional para pagamento rápido
+
+  // Detention terms (snapshot)
+  detentionStartsAfterHours Int? // horas até começar a contar detenção
+  detentionRatePerHour      Decimal? @db.Decimal(12, 2) // taxa por hora de detenção
+  detentionMaxCap           Decimal? @db.Decimal(12, 2) // valor máximo de detenção
+
+  // Layover / TONU / notes (keep non-legal wording; evidence snapshot)
+  layoverTermsText String? // texto livre 
+  tonuTermsText    String? // texto livre
+  notes            String? // notas adicionais
+
+  accessorials Accessorial[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Accessorial {
+  id              String        @id @default(uuid())
+  rateAgreementId String
+  rateAgreement   RateAgreement @relation(fields: [rateAgreementId], references: [id], onDelete: Cascade)
+
+  type   AccessorialType // tipo de serviço adicional
+  amount Decimal?        @db.Decimal(12, 2)
+  notes  String?
+
+  @@index([rateAgreementId])
+}
+
+// especificações da carga que será transportada
+model EquipmentSpec {
+  id     String @id @default(uuid())
+  loadId String @unique
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  trailerType          LoadType // tipo de trailer usado no momento da criação
+  temperatureSetpointF Decimal? @db.Decimal(6, 2) // required when REEFER (enforce in app)
+  temperatureMinF      Decimal? @db.Decimal(6, 2) // temperatura mínima
+  temperatureMaxF      Decimal? @db.Decimal(6, 2) // temperatura máxima
+
+  weightLbs   Decimal? @db.Decimal(12, 2) // peso total da carga
+  palletCount Int? // contagem de paletes 
+  pieceCount  Int? // contagem de peças/unidades
+
+  hazmat       Boolean @default(false) // se a carfa é perigosa
+  highValue    Boolean @default(false) // se a carga é de alto valor
+  sealRequired Boolean @default(false) // se é necessário um selo de segurança
+
+  // Securement (tier 2)
+  securementRequired Boolean  @default(false)
+  securementMethods  String[] // ex: ["STRAPS", "LOAD_BARS", "CHAINS"]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// requisitos de rastreamento e telemetria
+model TrackingRequirement {
+  id     String @id @default(uuid())
+  loadId String @unique
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  trackingRequired Boolean           @default(false)
+  provider         TrackingProvider?
+  providerOther    String? // when provider = OTHER
+
+  penaltyAmount Decimal? @db.Decimal(12, 2)
+  penaltyNote   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// termos de penalidade (atrasos, não conformidades, etc)
+model PenaltyTerms {
+  id     String @id @default(uuid())
+  loadId String @unique
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  lateFeeAmount Decimal? @db.Decimal(12, 2) // valor da taxa por atraso
+
+  scaleRequired      Boolean  @default(false) // se a parada na balança é obrigatória
+  scalePenaltyAmount Decimal? @db.Decimal(12, 2) // valor da taxa por não parar na balança
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TimelineEvent {
+  id     String @id @default(uuid())
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  type   TimelineEventType
+  source TimelineEventSource @default(MANUAL)
+
+  occurredAtUtc DateTime
+  timeZone      String
+
+  latitude     Decimal? @db.Decimal(9, 6)
+  longitude    Decimal? @db.Decimal(9, 6)
+  locationText String?
+
+  notes    String?
+  metadata Json?
+
+  attachments Attachment[]
+
+  // ✅ Legal audit fields
+  isEdited   Boolean   @default(false)
+  editedAt   DateTime?
+  editedById String?
+
+  originalOccurredAtUtc DateTime?
+  originalPayload       Json? // snapshot opcional do "antes" (primeira vez que editar)
+
+  // ✅ Hash chain (imutável por criação)
+  sequence Int
+  prevHash String?
+  hash     String
+
+  createdAt DateTime @default(now())
+
+  revisions TimelineEventRevision[]
+  user      User?                   @relation(fields: [userId], references: [id])
+  userId    String?
+
+  @@index([loadId, occurredAtUtc])
+  @@index([loadId, sequence])
+}
+
+model TimelineEventRevision {
+  id              String        @id @default(uuid())
+  timelineEventId String
+  timelineEvent   TimelineEvent @relation(fields: [timelineEventId], references: [id], onDelete: Cascade)
+
+  editedAt   DateTime @default(now())
+  editedById String
+
+  previousData Json
+  newData      Json
+
+  // hash da revisão (não altera a hash original do evento)
+  revisionHash String?
+
+  // “edited after export”
+  wasEditedAfterExport Boolean @default(false)
+  user                 User?   @relation(fields: [userId], references: [id])
+  userId               String?
+
+  @@index([timelineEventId, editedAt])
+}
+
+model LoadExport {
+  id     String @id @default(uuid())
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  version    Int
+  exportedAt DateTime @default(now())
+
+  exportedById String?
+  exportedBy   User?   @relation(fields: [exportedById], references: [id])
+
+  format         String // "pdf", "zip", etc
+  fileUrl        String?
+  checksumSha256 String?
+
+  @@unique([loadId, version])
+  @@index([loadId, exportedAt])
+}
+
+model Attachment {
+  id String @id @default(uuid())
+
+  loadId String?
+  load   Load?   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  timelineEventId String?
+  timelineEvent   TimelineEvent? @relation(fields: [timelineEventId], references: [id], onDelete: Cascade)
+
+  type     AttachmentType
+  fileName String
+  mimeType String?
+
+  storageKey   String // Cloudinary public_id
+  url          String // Cloudinary secure_url
+  resourceType String @default("raw") // image|raw|video
+  sizeBytes    Int?
+
+  // ✅ integrity + audit
+  checksumSha256 String?
+  uploadedById   String?
+  uploadedBy     User?   @relation(fields: [uploadedById], references: [id])
+
+  createdAt        DateTime          @default(now())
+  disputeEvidences DisputeEvidence[]
+
+  @@index([loadId, type])
+  @@index([timelineEventId])
+}
+
+model Dispute {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  disputeType   DisputeType
+  amountClaimed Decimal       @db.Decimal(12, 2)
+  status        DisputeStatus @default(OPEN)
+
+  resolutionNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  evidences DisputeEvidence[]
+
+  @@index([loadId, status])
+}
+
+model DisputeEvidence {
+  disputeId String
+  dispute   Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  attachmentId String
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@id([disputeId, attachmentId])
+}
+
+model Subscription {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planType PlanType
+  status   SubscriptionStatus
+  source   SubscriptionSource
+
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InvitationCode {
+  id   String @id @default(uuid())
+  code String @unique
+
+  planType PlanType
+  status   InvitationCodeStatus @default(ACTIVE)
+
+  maxRedemptions Int @default(1)
+  redeemedCount  Int @default(0)
+
+  expiresAt DateTime?
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  redemptions InvitationRedemption[]
+}
+
+model InvitationRedemption {
+  id String @id @default(uuid())
+
+  codeId String
+  code   InvitationCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  redeemedAt DateTime @default(now())
+
+  @@unique([codeId, userId])
+}
