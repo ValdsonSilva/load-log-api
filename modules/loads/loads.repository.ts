@@ -1,4 +1,4 @@
-import { Prisma } from "../../lib/generated/prisma/index.js";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 
 export class LoadsRepository {

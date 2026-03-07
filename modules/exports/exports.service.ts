@@ -3,7 +3,7 @@ import { AppError } from "../../utils/error.js";
 import { sha256Hex } from "../../utils/hash.js";
 import { ExportsRepository } from "./exports.repository.js";
 import { Buffer } from "buffer";
-import { Stop, TimelineEvent } from "../../lib/generated/prisma/index.js";
+import { Stop, TimelineEvent } from "@prisma/client";
 import crypto from "crypto";
 import { DateTime } from "luxon";
 import QRCode from "qrcode";
