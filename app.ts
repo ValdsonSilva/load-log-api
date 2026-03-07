@@ -6,7 +6,7 @@ import { routes } from "./routes.js";
 import { errorMiddleware } from "./middlewares/error.js";
 import PinoHttp from "pino-http";
 
-export function buildApp() {
+function buildApp() {
   const app = express();
 
   const allowedOrigins = ["*", "https://www.thunderclient.com"];
@@ -28,3 +28,6 @@ export function buildApp() {
 
   return app;
 }
+
+const app = buildApp();
+export default app;
