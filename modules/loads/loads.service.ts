@@ -1,10 +1,11 @@
 import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
+import { Load } from "@prisma/client";
 
 export class LoadsService {
     constructor(private repo = new LoadsRepository()) { }
 
-    async createLoad(userId: string, input: any) {
+    async createLoad(userId: string, input: Load) {
         // regra: loadNumber único por driver (já está no schema com @@unique([driverId, loadNumber]))
         return this.repo.create({
             driver: { connect: { id: userId } },
@@ -27,6 +28,10 @@ export class LoadsService {
             carrierMcNumber: input.carrierMcNumber,
             carrierDotNumber: input.carrierDotNumber,
             carrierMainPhone: input.carrierMainPhone,
+            expectedDeliveryCity: input.expectedDeliveryCity,
+            expectedDeliveryState: input.expectedDeliveryState,
+            expectedPickupCity: input.expectedPickupCity,
+            expectedPickupState: input.expectedPickupState
         });
     }
 
