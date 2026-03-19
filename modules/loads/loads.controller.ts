@@ -12,7 +12,7 @@ export const createLoad: RequestHandler = async (req, res) => {
   try {
     // const input = CreateLoadSchema.parse(req.body);
 
-    if (!input) throw new AppError(400, "Input invalido")
+    // if (!input) throw new AppError(400, "Input invalido")
 
     const load = await service.createLoad(userId, req.body as any);
     res.status(201).json(load);
