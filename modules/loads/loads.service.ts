@@ -7,7 +7,6 @@ export class LoadsService {
 
     async createLoad(userId: string, input: Load) {
         // regra: loadNumber único por driver (já está no schema com @@unique([driverId, loadNumber]))
-        console.log("Dados no service:", input)
         return this.repo.create({
             driver: { connect: { id: userId } },
             driverOperatingAs: input.driverOperatingAs,

@@ -10,11 +10,11 @@ export const createLoad: RequestHandler = async (req, res) => {
   if (!userId) throw new AppError(401, "Unauthorized");
 
   try {
-    const input = CreateLoadSchema.parse(req.body);
+    // const input = CreateLoadSchema.parse(req.body);
 
     if (!input) throw new AppError(400, "Input invalido")
 
-    const load = await service.createLoad(userId, input as any);
+    const load = await service.createLoad(userId, req.body as any);
     res.status(201).json(load);
   } catch (err: any) {
     console.log("Erro: ", err.message)
