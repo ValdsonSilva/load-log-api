@@ -2,7 +2,6 @@ import type { RequestHandler } from "express";
 import { CreateLoadSchema, ListLoadsSchema } from "./loads.schema.js";
 import { LoadsService } from "./loads.service.js";
 import { AppError } from "../../utils/error.js";
-import { Load } from "@prisma/client";
 
 const service = new LoadsService();
 
@@ -18,6 +17,7 @@ export const createLoad: RequestHandler = async (req, res) => {
     const load = await service.createLoad(userId, input as any);
     res.status(201).json(load);
   } catch (err: any) {
+    console.log("Erro: ", err.message)
     return res.status(500).json({ message: "Erro ao criar load", error: err.message })
   }
 };
