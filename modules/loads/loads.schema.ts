@@ -23,7 +23,7 @@ export const CreateLoadSchema = z.object({
   // Type/mode/status
   loadType: z.enum(["DRY_VAN", "REEFER", "FLATBED", "STEPDECK", "POWER_ONLY", "OTHER"]),
   mode: z.enum(["LIVE_LIVE", "LIVE_DROP", "DROP_LIVE", "DROP_DROP"]).default("LIVE_LIVE"),
-  status: z.enum(["PRE_TRIP", "IN_TRANSIT", "DELIVERED", "CANCELLED"]).default("PRE_TRIP"),
+  status: z.enum(["PRE_TRIP", "ACTIVE", "DRIVING", "DELIVERED", "CANCELLED"]).default("PRE_TRIP"),
 
   // Timeline & Geo context
   createdTimeZone: z.string().optional(),

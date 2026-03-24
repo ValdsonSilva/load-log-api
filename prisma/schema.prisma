@@ -399,7 +399,7 @@ model EquipmentSpec {
   palletCount Int? // contagem de paletes 
   pieceCount  Int? // contagem de peças/unidades
 
-  hazmat       Boolean @default(false) // se a carfa é perigosa
+  hazmat       Boolean @default(false) // se a carga é perigosa
   highValue    Boolean @default(false) // se a carga é de alto valor
   sealRequired Boolean @default(false) // se é necessário um selo de segurança
 

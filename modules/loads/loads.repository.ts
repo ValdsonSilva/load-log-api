@@ -17,15 +17,16 @@ export class LoadsRepository {
         return prisma.load.findMany({
             where,
             orderBy: { createdAt: "desc" },
-            select: {
-                id: true,
-                loadNumber: true,
-                status: true,
-                loadType: true,
-                mode: true,
-                brokerCompanyName: true,
-                createdAt: true,
-            },
+            // select: {
+            //     id: true,
+            //     loadNumber: true,
+            //     status: true,
+            //     loadType: true,
+            //     mode: true,
+            //     brokerCompanyName: true,
+            //     createdAt: true,
+                
+            // },
         });
     }
 
