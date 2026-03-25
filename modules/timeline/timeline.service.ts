@@ -107,6 +107,8 @@ export class TimelineService {
                 },
             });
 
+            if (!ev) throw new AppError(500, "Falha ao criar evento de timeline");
+
             return ev;
         });
     }
