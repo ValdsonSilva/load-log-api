@@ -47,8 +47,8 @@ export const patchLoad: RequestHandler = async (req, res) => {
   const id = req.params?.id;
   if (!id) throw new AppError(401, "Loads id is required")
 
-  const status = String(req.body?.status ?? "");
-  const accessorials: Prisma.AccessorialUpdateInput[] = req.body.accessorials ?? ""
+  const status = String(req.body?.status);
+  const accessorials: Prisma.AccessorialUpdateInput[] = req.body.accessorials
   if (!status && !accessorials) throw new AppError(400, "status/accessorials is required");
 
   const data = {
