@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.js";
-import { createLoad, listLoads, getLoad, patchStatus, deleteLoad } from "./loads.controller.js";
+import { createLoad, listLoads, getLoad, patchLoad, deleteLoad } from "./loads.controller.js";
 
 export const loadsRoutes = Router();
 
@@ -10,5 +10,5 @@ loadsRoutes.use(requireAuth);
 loadsRoutes.post("/", createLoad);
 loadsRoutes.get("/", listLoads);
 loadsRoutes.get("/:id", getLoad);
-loadsRoutes.patch("/:id/status", patchStatus);
+loadsRoutes.patch("/:id/status", patchLoad);
 loadsRoutes.delete("/:id", deleteLoad);

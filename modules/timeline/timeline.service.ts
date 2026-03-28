@@ -47,7 +47,7 @@ export class TimelineService {
                 `O evento ${type} já foi registrado para esta carga`
             );
         }
-    }
+    };
 
     async createEvent(userId: string, loadId: string, input: any) {
         await this.assertLoadOwned(userId, loadId);
@@ -111,7 +111,7 @@ export class TimelineService {
 
             return ev;
         });
-    }
+    };
 
     async updateEvent(userId: string, eventId: string, input: any) {
         const ev = await prisma.timelineEvent.findUnique({
@@ -200,7 +200,7 @@ export class TimelineService {
 
             return updated;
         });
-    }
+    };
 
     async listEvents(userId: string, loadId: string) {
         await this.assertLoadOwned(userId, loadId);
@@ -209,7 +209,7 @@ export class TimelineService {
             orderBy: [{ occurredAtUtc: "asc" }],
             include: { attachments: true, revisions: true },
         });
-    }
+    };
 
     async deleteEvent(userId: string, eventId: string) {
         const ev = await this.repo.findById(eventId);
@@ -217,5 +217,5 @@ export class TimelineService {
         if (ev.load.driverId !== userId) throw new AppError(403, "Forbidden");
 
         await this.repo.delete(eventId);
-    }
+    };
 }

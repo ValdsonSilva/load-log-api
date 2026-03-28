@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { CreateLoadSchema, ListLoadsSchema } from "./loads.schema.js";
 import { LoadsService } from "./loads.service.js";
 import { AppError } from "../../utils/error.js";
+import { Prisma } from "@prisma/client";
 
 const service = new LoadsService();
 
@@ -39,14 +40,23 @@ export const getLoad: RequestHandler = async (req, res) => {
   res.json(load);
 };
 
-export const patchStatus: RequestHandler = async (req, res) => {
+export const patchLoad: RequestHandler = async (req, res) => {
   const userId = req.auth?.userId;
   if (!userId) throw new AppError(401, "Unauthorized");
 
-  const status = String(req.body?.status ?? "");
-  if (!status) throw new AppError(400, "status is required");
+  const id = req.params?.id;
+  if (!id) throw new AppError(401, "Loads id is required")
 
-  const updated = await service.updateStatus(userId, req.params.id as string, status);
+  const status = String(req.body?.status ?? "");
+  const accessorials: Prisma.AccessorialUpdateInput[] = req.body.accessorials ?? ""
+  if (!status && !accessorials) throw new AppError(400, "status/accessorials is required");
+
+  const data = {
+    status,
+    accessorials
+  }
+
+  const updated = await service.update(userId, req.params.id as string, data);
   res.json(updated);
 };
 

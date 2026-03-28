@@ -1,11 +1,11 @@
 import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
-import { Load } from "@prisma/client";
+import { Load, Prisma } from "@prisma/client";
 
 export class LoadsService {
     constructor(private repo = new LoadsRepository()) { }
 
-    async createLoad(userId: string, input: Load) {
+    async createLoad(userId: string, input: Prisma.LoadCreateInput) {
         // regra: loadNumber único por driver (já está no schema com @@unique([driverId, loadNumber]))
         return this.repo.create({
             driver: { connect: { id: userId } },
@@ -31,7 +31,8 @@ export class LoadsService {
             expectedDeliveryCity: input.expectedDeliveryCity,
             expectedDeliveryState: input.expectedDeliveryState,
             expectedPickupCity: input.expectedPickupCity,
-            expectedPickupState: input.expectedPickupState
+            expectedPickupState: input.expectedPickupState,
+            rateAgreement: input.rateAgreement
         });
     }
 
@@ -56,10 +57,43 @@ export class LoadsService {
         return load;
     }
 
-    async updateStatus(userId: string, loadId: string, status: string) {
-        // regra: do load só pode ser atualizado o status válido
+    // async update(userId: string, loadId: string, status: string) {
+    //     // regra: do load só pode ser atualizado o status válido
+    //     await this.getLoad(userId, loadId);
+    //     return this.repo.update(loadId, { status: status as any });
+    // }
+
+    async update(userId: string, loadId: string, updateData: {
+        status?: string,
+        accessorials?: Prisma.AccessorialUpdateInput[]
+    }) {
+        // 1. Validar se o load pertence ao usuário
         await this.getLoad(userId, loadId);
-        return this.repo.update(loadId, { status: status as any });
+
+        // 2. Preparar o objeto de atualização
+        const data: any = {};
+
+        if (updateData.status) {
+            data.status = updateData.status;
+        }
+
+        if (updateData.accessorials) {
+            data.rateAgreement = {
+                update: {
+                    accessorials: {
+                        // Estratégia: Deletar os antigos e criar os novos (mais simples para edição de listas)
+                        deleteMany: {},
+                        create: updateData.accessorials.map(acc => ({
+                            type: acc.type,
+                            amount: acc.amount,
+                            notes: acc.notes
+                        }))
+                    }
+                }
+            };
+        }
+
+        return this.repo.update(loadId, data);
     }
 
     async deleteLoad(userId: string, loadId: string) {
