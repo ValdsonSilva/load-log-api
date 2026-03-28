@@ -10,5 +10,5 @@ loadsRoutes.use(requireAuth);
 loadsRoutes.post("/", createLoad);
 loadsRoutes.get("/", listLoads);
 loadsRoutes.get("/:id", getLoad);
-loadsRoutes.patch("/:id/status", patchLoad);
+loadsRoutes.patch("/:id", patchLoad);
 loadsRoutes.delete("/:id", deleteLoad);
