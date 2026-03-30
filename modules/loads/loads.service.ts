@@ -73,11 +73,11 @@ export class LoadsService {
         // 2. Preparar o objeto de atualização
         const data: any = {};
 
-        if (updateData.status) {
+        if (updateData.status !== undefined) {
             data.status = updateData.status;
         }
 
-        if (updateData.accessorials) {
+        if (updateData.accessorials !== undefined) {
             data.rateAgreement = {
                 update: {
                     accessorials: {
@@ -92,6 +92,8 @@ export class LoadsService {
                 }
             };
         }
+
+        if (Object.keys(data).length === 0) return new AppError(400, "Nenhum campo para atualizar");
 
         return this.repo.update(loadId, data);
     }
