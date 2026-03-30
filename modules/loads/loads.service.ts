@@ -58,29 +58,34 @@ export class LoadsService {
     }
 
     async updateLoad(userId: string, loadId: string, updateData: any) {
-        // 1. Validar se o load pertence ao usuário (importante manter)
-        await this.getLoad(userId, loadId);
+        // 1. Busca o load atual (importante: inclua o rateAgreement na busca)
+        // Se o seu getLoad não traz o rateAgreement, você precisará ajustar a query lá
+        const existingLoad = await this.getLoad(userId, loadId);
 
-        // 2. Construir o objeto de atualização dinamicamente
         const data: any = {};
 
-        // Só adiciona o status se ele realmente existir no updateData
+        // Tratamento do Status (Proteção contra o erro de Enum "undefined")
         if (updateData.status !== undefined && updateData.status !== null) {
             data.status = updateData.status;
         }
 
-        // 1. Garante que accessorials seja sempre um array
+        // Tratamento de Acessórios (Garantindo que seja Array)
         const accessorialsList = Array.isArray(updateData.accessorials)
             ? updateData.accessorials
-            : updateData.accessorials
-                ? [updateData.accessorials] // Se for um objeto único, coloca dentro de um array
-                : []; // Se for nulo/undefined, vira array vazio
+            : updateData.accessorials ? [updateData.accessorials] : [];
 
-        // 2. Agora use a variável accessorialsList para o map
         if (accessorialsList.length > 0) {
+            // Valores padrão vindos do banco ou valores fixos de fallback
+            const currentRA = existingLoad.rateAgreement;
+
             data.rateAgreement = {
                 upsert: {
                     create: {
+                        // CAMPOS OBRIGATÓRIOS DO SEU MODEL:
+                        rateAmount: currentRA?.rateAmount ?? 0,
+                        rateType: currentRA?.rateType ?? 'FLAT', // Ajuste para um valor válido do seu Enum
+                        paymentMethod: currentRA?.paymentMethod ?? 'STANDARD',
+
                         accessorials: {
                             create: accessorialsList.map((acc: any) => ({
                                 type: acc.type,
@@ -91,7 +96,7 @@ export class LoadsService {
                     },
                     update: {
                         accessorials: {
-                            deleteMany: {},
+                            deleteMany: {}, // Reset da lista
                             create: accessorialsList.map((acc: any) => ({
                                 type: acc.type,
                                 amount: acc.amount,
@@ -103,14 +108,14 @@ export class LoadsService {
             };
         }
 
-        // 3. Verificação de segurança
         if (Object.keys(data).length === 0) {
-            console.log("Nenhum campo válido para atualizar");
-            throw new AppError(400, "Nenhum campo válido para atualizar");
+            throw new AppError(400, "Nenhum campo para atualizar");
         }
 
-        // 4. Execução
-        return await this.repo.update(loadId, data);
+        return await this.repo.update(
+            loadId,
+            data
+        );
     }
 
     async deleteLoad(userId: string, loadId: string) {
