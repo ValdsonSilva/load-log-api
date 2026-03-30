@@ -57,12 +57,6 @@ export class LoadsService {
         return load;
     }
 
-    // async update(userId: string, loadId: string, status: string) {
-    //     // regra: do load só pode ser atualizado o status válido
-    //     await this.getLoad(userId, loadId);
-    //     return this.repo.update(loadId, { status: status as any });
-    // }
-
     async updateLoad(userId: string, loadId: string, updateData: any) {
         // 1. Validar se o load pertence ao usuário (importante manter)
         await this.getLoad(userId, loadId);
@@ -105,6 +99,7 @@ export class LoadsService {
 
         // 3. Verificação de segurança
         if (Object.keys(data).length === 0) {
+            console.log("Nenhum campo válido para atualizar");
             throw new AppError(400, "Nenhum campo válido para atualizar");
         }
 
