@@ -25,12 +25,12 @@ export class LoadsRepository {
             //     mode: true,
             //     brokerCompanyName: true,
             //     createdAt: true,
-                
+
             // },
         });
     }
 
-    update(id: string, data: Prisma.LoadUpdateInput) {
+    update(id: string, data: Partial<Prisma.LoadUpdateInput>) {
         return prisma.load.update({ where: { id }, data });
     }
 
