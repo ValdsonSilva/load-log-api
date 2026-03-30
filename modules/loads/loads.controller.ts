@@ -57,7 +57,7 @@ export const patchLoad: RequestHandler = async (req, res) => {
   }
 
   try {
-    const updated = await service.update(userId, req.params.id as string, data);
+    const updated = await service.updateLoad(userId, req.params.id as string, data);
     res.status(200).json(updated);
   } catch (erro: any) {
     console.log("Erro: ", erro.message);

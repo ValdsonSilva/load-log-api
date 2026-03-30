@@ -63,39 +63,53 @@ export class LoadsService {
     //     return this.repo.update(loadId, { status: status as any });
     // }
 
-    async update(userId: string, loadId: string, updateData: {
-        status?: string,
-        accessorials?: Prisma.AccessorialUpdateInput[]
-    }) {
-        // 1. Validar se o load pertence ao usuário
+    async updateLoad(userId: string, loadId: string, updateData: any) {
+        // 1. Validar se o load pertence ao usuário (importante manter)
         await this.getLoad(userId, loadId);
 
-        // 2. Preparar o objeto de atualização
+        // 2. Construir o objeto de atualização dinamicamente
         const data: any = {};
 
-        if (updateData.status !== undefined) {
+        // Só adiciona o status se ele realmente existir no updateData
+        if (updateData.status !== undefined && updateData.status !== null) {
             data.status = updateData.status;
         }
 
-        if (updateData.accessorials !== undefined) {
+        // Estratégia Upsert para o RateAgreement + Recreação de Accessorials
+        if (updateData.accessorials) {
             data.rateAgreement = {
-                update: {
-                    accessorials: {
-                        // Estratégia: Deletar os antigos e criar os novos (mais simples para edição de listas)
-                        deleteMany: {},
-                        create: updateData.accessorials.map(acc => ({
-                            type: acc.type,
-                            amount: acc.amount,
-                            notes: acc.notes
-                        }))
+                // Se o rateAgreement não existir, ele cria. Se existir, ele atualiza.
+                upsert: {
+                    create: {
+                        accessorials: {
+                            create: updateData.accessorials.map((acc: any) => ({
+                                type: acc.type,
+                                amount: acc.amount,
+                                notes: acc.notes
+                            }))
+                        }
+                    },
+                    update: {
+                        accessorials: {
+                            deleteMany: {}, // Limpa os antigos
+                            create: updateData.accessorials.map((acc: any) => ({
+                                type: acc.type,
+                                amount: acc.amount,
+                                notes: acc.notes
+                            }))
+                        }
                     }
                 }
             };
         }
 
-        if (Object.keys(data).length === 0) return new AppError(400, "Nenhum campo para atualizar");
+        // 3. Verificação de segurança
+        if (Object.keys(data).length === 0) {
+            throw new AppError(400, "Nenhum campo válido para atualizar");
+        }
 
-        return this.repo.update(loadId, data);
+        // 4. Execução
+        return await this.repo.update(loadId, data);
     }
 
     async deleteLoad(userId: string, loadId: string) {
