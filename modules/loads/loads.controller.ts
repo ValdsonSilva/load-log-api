@@ -40,29 +40,46 @@ export const getLoad: RequestHandler = async (req, res) => {
   res.json(load);
 };
 
-export const patchLoad: RequestHandler = async (req, res) => {
-  const userId = req.auth?.userId;
-  if (!userId) throw new AppError(401, "Unauthorized");
-
-  const id = req.params?.id;
-  if (!id) throw new AppError(401, "Loads id is required")
-
-  const status = req.body?.status;
-  const accessorials: Prisma.AccessorialUpdateInput[] = req.body.accessorials
-  if (!status && !accessorials) throw new AppError(400, "status/accessorials is required");
-
-  const data = {
-    status,
-    accessorials
-  }
-
+export const patchLoad: RequestHandler = async (req, res, next) => {
   try {
-    const updated = await service.updateLoad(userId, req.params.id as string, data);
-    res.status(200).json(updated);
-  } catch (erro: any) {
-    console.log("Erro: ", erro.message);
-    return res.status(500).json({ message: "Erro ao atualizar Load", erro: erro.message });
-  };
+    const userId = req.auth?.userId;
+    if (!userId) throw new AppError(401, "Unauthorized");
+
+    const id = req.params.id as string;
+    if (!id) throw new AppError(400, "Load ID é obrigatório"); // Alterado para 400
+
+    const { status, accessorials } = req.body;
+
+    // Validação: Se ambos forem nulos/undefined, nem chama o service
+    if (!status && !accessorials) {
+      throw new AppError(400, "No mínimo status ou accessorials deve ser fornecido");
+    }
+
+    // Criamos um objeto apenas com o que foi enviado
+    const updateData: any = {};
+    if (status !== undefined) updateData.status = status;
+    if (accessorials !== undefined) updateData.accessorials = accessorials;
+
+    const updated = await service.updateLoad(userId, id, updateData);
+
+    return res.status(200).json(updated);
+
+  } catch (error: any) {
+    console.error("Erro no Controller PatchLoad:", error.message);
+
+    // Se for um erro que nós lançamos (AppError), usamos o status dele
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        message: error.message
+      });
+    }
+
+    // Se for um erro desconhecido (ex: Banco fora do ar), aí sim 500
+    return res.status(500).json({
+      message: "Internal Server Error",
+      details: error.message
+    });
+  }
 };
 
 export const deleteLoad: RequestHandler = async (req, res) => {
