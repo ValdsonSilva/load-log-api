@@ -69,14 +69,20 @@ export class LoadsService {
             data.status = updateData.status;
         }
 
-        // Estratégia Upsert para o RateAgreement + Recreação de Accessorials
-        if (updateData.accessorials) {
+        // 1. Garante que accessorials seja sempre um array
+        const accessorialsList = Array.isArray(updateData.accessorials)
+            ? updateData.accessorials
+            : updateData.accessorials
+                ? [updateData.accessorials] // Se for um objeto único, coloca dentro de um array
+                : []; // Se for nulo/undefined, vira array vazio
+
+        // 2. Agora use a variável accessorialsList para o map
+        if (accessorialsList.length > 0) {
             data.rateAgreement = {
-                // Se o rateAgreement não existir, ele cria. Se existir, ele atualiza.
                 upsert: {
                     create: {
                         accessorials: {
-                            create: updateData.accessorials.map((acc: any) => ({
+                            create: accessorialsList.map((acc: any) => ({
                                 type: acc.type,
                                 amount: acc.amount,
                                 notes: acc.notes
@@ -85,8 +91,8 @@ export class LoadsService {
                     },
                     update: {
                         accessorials: {
-                            deleteMany: {}, // Limpa os antigos
-                            create: updateData.accessorials.map((acc: any) => ({
+                            deleteMany: {},
+                            create: accessorialsList.map((acc: any) => ({
                                 type: acc.type,
                                 amount: acc.amount,
                                 notes: acc.notes

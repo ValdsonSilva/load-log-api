@@ -50,6 +50,8 @@ export const patchLoad: RequestHandler = async (req, res, next) => {
 
     const { status, accessorials } = req.body;
 
+    console.log({ body: req.body })
+
     // Validação: Se ambos forem nulos/undefined, nem chama o service
     if (!status && !accessorials) {
       throw new AppError(400, "No mínimo status ou accessorials deve ser fornecido");
