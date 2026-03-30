@@ -56,8 +56,13 @@ export const patchLoad: RequestHandler = async (req, res) => {
     accessorials
   }
 
-  const updated = await service.update(userId, req.params.id as string, data);
-  res.json(updated);
+  try {
+    const updated = await service.update(userId, req.params.id as string, data);
+    res.status(200).json(updated);
+  } catch (erro: any) {
+    console.log("Erro: ", erro.message);
+    return res.status(500).json({ message: "Erro ao atualizar Load", erro: erro.message });
+  };
 };
 
 export const deleteLoad: RequestHandler = async (req, res) => {
