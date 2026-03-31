@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Load, Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 
 export class LoadsRepository {
@@ -36,7 +36,15 @@ export class LoadsRepository {
     }
 
     update(id: string, data: Partial<Prisma.LoadUpdateInput>) {
-        return prisma.load.update({ where: { id }, data });
+        return prisma.load.update({
+            where: { id },
+            data,
+            include: {
+                stops: true, timelineEvents: true, attachments: true, rateAgreement: {
+                    include: { accessorials: true }
+                }, equipmentSpec: true, trackingReq: true, penaltyTerms: true, disputes: true
+            },
+        });
     }
 
     delete(id: string) {

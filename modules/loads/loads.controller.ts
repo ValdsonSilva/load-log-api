@@ -40,7 +40,7 @@ export const getLoad: RequestHandler = async (req, res) => {
   res.json(load);
 };
 
-export const patchLoad: RequestHandler = async (req, res, next) => {
+export const patchLoad: RequestHandler = async (req, res) => {
   try {
     const userId = req.auth?.userId;
     if (!userId) throw new AppError(401, "Unauthorized");

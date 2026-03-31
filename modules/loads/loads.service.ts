@@ -1,6 +1,7 @@
 import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
 import { Load, Prisma } from "@prisma/client";
+import { prisma } from "../../lib/prisma.js";
 
 export class LoadsService {
     constructor(private repo = new LoadsRepository()) { }
@@ -59,63 +60,55 @@ export class LoadsService {
 
     async updateLoad(userId: string, loadId: string, updateData: any) {
         // 1. Busca o load atual (importante: inclua o rateAgreement na busca)
-        // Se o seu getLoad não traz o rateAgreement, você precisará ajustar a query lá
-        const existingLoad = await this.getLoad(userId, loadId);
+        await this.getLoad(userId, loadId);
 
+        // 2. Prepara os dados básicos do Load (Status, etc.)
         const data: any = {};
-
-        // Tratamento do Status (Proteção contra o erro de Enum "undefined")
-        if (updateData.status !== undefined && updateData.status !== null) {
+        if (updateData.status !== undefined) {
             data.status = updateData.status;
         }
 
-        // Tratamento de Acessórios (Garantindo que seja Array)
+        // 3. Executa o Update Principal (Status e outros campos do Load)
+        const updatedLoad = await this.repo.update(
+            loadId,
+            data
+        );
+
+        // 4. BRAÇO FORTE: Inserção manual dos acessórios
         const accessorialsList = Array.isArray(updateData.accessorials)
             ? updateData.accessorials
             : updateData.accessorials ? [updateData.accessorials] : [];
 
         if (accessorialsList.length > 0) {
-            // Valores padrão vindos do banco ou valores fixos de fallback
-            const currentRA = existingLoad.rateAgreement;
+            let rateAgreementId = updatedLoad.rateAgreement?.id;
 
-            data.rateAgreement = {
-                upsert: {
-                    create: {
-                        // CAMPOS OBRIGATÓRIOS DO SEU MODEL:
-                        rateAmount: currentRA?.rateAmount ?? 0,
-                        rateType: currentRA?.rateType ?? 'FLAT', // Ajuste para um valor válido do seu Enum
-                        paymentMethod: currentRA?.paymentMethod ?? 'STANDARD',
-
-                        accessorials: {
-                            create: accessorialsList.map((acc: any) => ({
-                                type: acc.type,
-                                amount: acc.amount,
-                                notes: acc.notes
-                            }))
-                        }
-                    },
-                    update: {
-                        accessorials: {
-                            deleteMany: {}, // Reset da lista
-                            create: accessorialsList.map((acc: any) => ({
-                                type: acc.type,
-                                amount: acc.amount,
-                                notes: acc.notes
-                            }))
-                        }
+            if (!rateAgreementId) {
+                // Se por algum motivo não houver RateAgreement, você pode criar um aqui
+                // ou lançar um erro dependendo da sua regra de negócio.
+                const newRateAgreement = await prisma.rateAgreement.create({
+                    data: {
+                        loadId,
+                        rateAmount: 0,
+                        rateType: 'FLAT',
                     }
-                }
-            };
+                })
+                rateAgreementId = newRateAgreement.id
+            }
+
+            // Criamos os novos acessórios vinculando-os diretamente ao ID do RateAgreement
+            // Isso GARANTE que os antigos não sejam tocados.
+            await prisma.accessorial.createMany({
+                data: accessorialsList.map((acc: any) => ({
+                    type: acc.type,
+                    amount: acc.amount,
+                    notes: acc.notes,
+                    rateAgreementId: rateAgreementId // A chave estrangeira direta
+                }))
+            });
         }
 
-        if (Object.keys(data).length === 0) {
-            throw new AppError(400, "Nenhum campo para atualizar");
-        }
-
-        return await this.repo.update(
-            loadId,
-            data
-        );
+        // 5. Retorna o Load completo (Opcional: fazer um fetch final para vir tudo atualizado)
+        return await this.repo.findById(loadId);
     }
 
     async deleteLoad(userId: string, loadId: string) {
