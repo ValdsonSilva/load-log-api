@@ -10,8 +10,11 @@ export class LoadsRepository {
         return prisma.load.findUnique({
             where: { id },
             include: {
-                stops: true, timelineEvents: true, attachments: true, rateAgreement: true, equipmentSpec: true, trackingReq: true, penaltyTerms: true, disputes: true
+                stops: true, timelineEvents: true, attachments: true, rateAgreement: {
+                    include: { accessorials: true }
+                }, equipmentSpec: true, trackingReq: true, penaltyTerms: true, disputes: true
             },
+
         });
     }
 
