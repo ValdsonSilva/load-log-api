@@ -7,12 +7,12 @@ export const deleteAccessorial: RequestHandler = async (req, res) => {
     const userId = req.auth?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const { id } = req.params as { id: string };
+    const { accessorialId } = req.params as { accessorialId: string };
 
-    if (!id) return res.status(400).json({ message: "Accessorial ID é obrigatório" });
+    if (!accessorialId) return res.status(400).json({ message: "Accessorial ID é obrigatório" });
 
     try {
-        await repository.delete(id);
+        await repository.delete(accessorialId);
         res.status(204).send();
     } catch (error: any) {
         console.log("Erro: ", error.message);
