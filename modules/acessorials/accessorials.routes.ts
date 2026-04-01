@@ -3,8 +3,8 @@ import { loadsRoutes } from "../loads/loads.routes";
 import { requireAuth } from "../../middlewares/auth";
 import { deleteAccessorial } from "./accessorials.controller";
 
-export const acessorialsRoutes = Router();
+export const accessorialsRoutes = Router();
 
 loadsRoutes.use(requireAuth);
 
-loadsRoutes.delete("/accessorials/:accessorialId", deleteAccessorial)
+accessorialsRoutes.delete("/accessorials/:accessorialId", deleteAccessorial)

@@ -8,7 +8,7 @@ import { subscriptionsRoutes } from "./modules/subscription/subscriptions.routes
 import { exportsRoutes } from "./modules/exports/exports.routes.js";
 import { timelineRoutes } from "./modules/timeline/timeline.routes.js";
 import { stopsRoutes } from "./modules/stops/stops.routes.js";
-import { acessorialsRoutes } from "./modules/acessorials/accessorials.routes.js";
+import { accessorialsRoutes } from "./modules/acessorials/accessorials.routes.js";
 
 export const routes = Router();
 
@@ -22,6 +22,6 @@ routes.use("/", [
     exportsRoutes,
     timelineRoutes,
     stopsRoutes,
-    acessorialsRoutes
+    accessorialsRoutes
 ]);
 
