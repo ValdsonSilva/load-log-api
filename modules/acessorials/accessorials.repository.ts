@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 
 export class AccessorialsRepository {
-    delete(id: string) {
-        return prisma.accessorial.delete({ where: { id } });
+    async delete(id: string) {
+        return await prisma.accessorial.delete({ where: { id } });
     }
 }
