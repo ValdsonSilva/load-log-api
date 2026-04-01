@@ -14,7 +14,8 @@ export const deleteAccessorial: RequestHandler = async (req, res) => {
     try {
         await repository.delete(id);
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
+        console.log("Erro: ", error.message);
         res.status(500).json({ message: "Erro ao excluir accessorial" });
     }
 }
