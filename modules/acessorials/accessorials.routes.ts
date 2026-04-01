@@ -5,6 +5,6 @@ import { deleteAccessorial } from "./accessorials.controller";
 
 export const accessorialsRoutes = Router();
 
-loadsRoutes.use(requireAuth);
+accessorialsRoutes.use(requireAuth);
 
 accessorialsRoutes.delete("/accessorials/:accessorialId", deleteAccessorial)
