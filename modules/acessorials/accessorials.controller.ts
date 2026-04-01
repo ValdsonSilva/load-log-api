@@ -10,6 +10,8 @@ export const deleteAccessorial: RequestHandler = async (req, res) => {
     // AJUSTE: O nome aqui deve bater com o que está no arquivo de routes (:accessorialId)
     const { accessorialId } = req.params;
 
+    console.log("Tentando excluir accessorial com ID: ", accessorialId);
+
     if (!accessorialId) {
         return res.status(400).json({ message: "Accessorial ID é obrigatório" });
     }
