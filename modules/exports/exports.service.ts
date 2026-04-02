@@ -292,7 +292,7 @@ export class ExportsService {
 
                 y += 18;
                 doc.text(`Equipment: ${safe(load.loadType)}`, leftCol, y);
-                doc.text(`Temperature: ${safe(load.equipmentSpec.temperatureSetpointF)}`, rightCol, y);
+                doc.text(`Temperature: ${load.equipmentSpec?.temperatureSetpointF ?? "---"}`, rightCol, y);
 
 
                 /* --------------------------------------------------
@@ -356,7 +356,7 @@ export class ExportsService {
                 timeline.forEach((event: TimelineEvent) => {
                     doc.text(event.type, columns.event, tableY, { width: 100 });
                     doc.text(formatDriverTime(event.occurredAtUtc.toISOString()), columns.time, tableY, { width: 180 });
-                    doc.text(`${event.latitude || ""}, ${event.longitude || ""}`, columns.location, tableY, { width: 130 });
+                    doc.text(`${event.latitude || "---"}, ${event.longitude || "---"}`, columns.location, tableY, { width: 130 });
                     doc.text(safe(event.notes, "---"), columns.notes, tableY, { width: 100 });
 
                     tableY += rowHeight;
