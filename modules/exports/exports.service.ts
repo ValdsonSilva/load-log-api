@@ -8,6 +8,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import QRCode from "qrcode";
 import PDFDocument from "pdfkit";
+import { trailerTypes } from "../../utils/loadTypeLabel.js";
 
 
 // snapshot determinístico
@@ -291,7 +292,7 @@ export class ExportsService {
                 doc.text(`Destination: ${safe(load.expectedDeliveryCity)}`, rightCol, y, { width: 250 });
 
                 y += 18;
-                doc.text(`Equipment: ${safe(load.loadType)}`, leftCol, y);
+                doc.text(`Equipment: ${trailerTypes.find((t) => t.value === (safe(load.loadType)))?.label ?? "---"}`, leftCol, y);
                 doc.text(`Temperature: ${load.equipmentSpec?.temperatureSetpointF ?? "---"}`, rightCol, y);
 
 
