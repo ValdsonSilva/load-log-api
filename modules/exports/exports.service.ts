@@ -46,7 +46,7 @@ export class ExportsService {
         return load;
     }
 
-    private calculateDetentionFromTimeline(events: TimelineEvent[]) {
+    private calculateDetentionFromTimeline(events: TimelineEvent[], detentionStartAfterHours: number = 2) {
         let shipperArrival: number | null = null;
         let shipperDeparture: number | null = null;
 
@@ -77,10 +77,13 @@ export class ExportsService {
 
         const results = [];
 
-        const freeMinutes = 120; // (2h) se passar disso, o motorista pode cobrar um extra pelo tempo de detenção
+        // devo extrair esse valor da tabela rateAgreement.detentionStartsAfterHours
+        // (2h) se passar disso, o motorista pode cobrar um extra pelo tempo de detenção
+        const freeMinutes = detentionStartAfterHours * 60; // convertenndo em minutos
 
         if (shipperArrival && shipperDeparture) {
-            const total = Math.max(0, (shipperDeparture - shipperArrival) / 60000);
+            // 
+            const total = Math.max(0, (shipperDeparture - shipperArrival) / 60000); // 60000 milesegundos para converter em minutos
             results.push({
                 location: "Shipper",
                 totalMinutes: total,
@@ -119,7 +122,8 @@ export class ExportsService {
                 -------------------------------------------------- */
 
                 const DRIVER_TZ = load.createdTimeZone || "America/Los_Angeles";
-                const MAX_REASONABLE_DETENTION_HOURS = 72;
+                // devo poder capturar esse valor da tabela rateAgreement.detentionMaxCap
+                const MAX_REASONABLE_DETENTION_HOURS = Number(load.rateAgreement.detentionMaxCap) || 72;
 
                 const safe = (v: any, f = "Not Provided") =>
                     v === undefined || v === null || v === "" ? f : v;
@@ -169,9 +173,12 @@ export class ExportsService {
                     }
                 });
 
-                const detentionResults =
-                    this.calculateDetentionFromTimeline(timeline as any);
+                const detentionStartsAfterHours = load.rateAgreement.detentionStartsAfterHours;
 
+                const detentionResults =
+                    this.calculateDetentionFromTimeline(timeline as any, detentionStartsAfterHours || 2);
+
+                // converto o tempo em horas e verifico se ele passa do tempo limite de detenção
                 detentionResults.forEach((d: any) => {
                     d.flag =
                         d.totalMinutes / 60 > MAX_REASONABLE_DETENTION_HOURS;

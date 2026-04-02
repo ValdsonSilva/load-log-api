@@ -56,6 +56,40 @@ export const CreateLoadSchema = z.object({
   carrierMcNumber: z.string().optional(),
   carrierDotNumber: z.string().optional(),
   carrierMainPhone: z.string().optional(),
+
+  rateAgreement: z.object({
+    rateAmount: z.number(),
+    rateType: z.enum(["FLAT", "PER_MILE", "OTHER"]),
+    quotedMiles: z.number().optional(),
+    paymentMethod: z.enum(["FACTORING", "QUICK_PAY", "STANDARD"]).default("STANDARD"),
+    quickPayFee: z.number().min(0).nullable().optional(),
+    detentionStartsAfterHours: z.number().int().positive().nullable().optional(),
+    // Para Decimais, geralmente validamos como number ou coercemos
+    detentionRatePerHour: z.number().min(0).nullable().optional(),
+    detentionMaxCap: z.number().min(0).nullable().optional(),
+    layoverTermsText: z.string().nullable().optional(),
+    tonuTermsText: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  }),
+
+  equipmentSpec: z.object({
+    trailerType: z.enum(["DRY_VAN", "REEFER", "FLATBED", "STEPDECK", "POWER_ONLY", "OTHER"]),
+    // Temperaturas (Decimal 6,2 no DB)
+    temperatureSetpointF: z.coerce.number().nullable().optional(),
+    temperatureMinF: z.coerce.number().nullable().optional(),
+    temperatureMaxF: z.coerce.number().nullable().optional(),
+    // Carga e Quantidade
+    weightLbs: z.coerce.number().min(0).nullable().optional(),
+    palletCount: z.number().int().min(0).nullable().optional(),
+    pieceCount: z.number().int().min(0).nullable().optional(),
+    // Flags (Booleanos com default)
+    hazmat: z.boolean().default(false),
+    highValue: z.boolean().default(false),
+    sealRequired: z.boolean().default(false),
+    // Securement
+    securementRequired: z.boolean().default(false),
+    securementMethods: z.array(z.string()).default([]),
+  })
 });
 
 export const ListLoadsSchema = z.object({
