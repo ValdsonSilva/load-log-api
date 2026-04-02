@@ -292,7 +292,7 @@ export class ExportsService {
 
                 y += 18;
                 doc.text(`Equipment: ${safe(load.loadType)}`, leftCol, y);
-                doc.text(`Temperature's range: ${safe(load.equipmentSpec.temperatureMinF)} - ${safe(load.equipmentSpec.temperatureMaxF)}`, rightCol, y);
+                doc.text(`Temperature: ${safe(load.equipmentSpec.temperatureSetpointF)}`, rightCol, y);
 
 
                 /* --------------------------------------------------
@@ -341,7 +341,7 @@ export class ExportsService {
                 doc.font("Helvetica-Bold").fontSize(8);
                 doc.text("Event", columns.event, tableY);
                 doc.text("Driver Time", columns.time, tableY);
-                doc.text("Location", columns.location, tableY);
+                doc.text("Location GPS", columns.location, tableY);
                 doc.text("Notes", columns.notes, tableY);
 
                 tableY += rowHeight;
@@ -353,10 +353,10 @@ export class ExportsService {
                 // Rows
                 doc.font("Helvetica").fontSize(8);
 
-                timeline.forEach((event: any) => {
+                timeline.forEach((event: TimelineEvent) => {
                     doc.text(event.type, columns.event, tableY, { width: 100 });
                     doc.text(formatDriverTime(event.occurredAtUtc.toISOString()), columns.time, tableY, { width: 180 });
-                    doc.text(`${event.city || ""}, ${event.state || ""}`, columns.location, tableY, { width: 130 });
+                    doc.text(`${event.latitude || ""}, ${event.longitude || ""}`, columns.location, tableY, { width: 130 });
                     doc.text(safe(event.notes, "---"), columns.notes, tableY, { width: 100 });
 
                     tableY += rowHeight;
