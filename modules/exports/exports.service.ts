@@ -288,8 +288,8 @@ export class ExportsService {
                 doc.text(`Load #: ${safe(load.loadNumber)}`, rightCol, y);
 
                 y += 18;
-                doc.text(`Origin: ${safe(load.expectedPickupCity)}`, leftCol, y, { width: 250 });
-                doc.text(`Destination: ${safe(load.expectedDeliveryCity)}`, rightCol, y, { width: 250 });
+                doc.text(`Origin: ${safe(load.expectedPickupCity)} - ${safe(load.expectedPickupState)}`, leftCol, y, { width: 250 });
+                doc.text(`Destination: ${safe(load.expectedDeliveryCity)} - ${safe(load.expectedDeliveryState)}`, rightCol, y, { width: 250 });
 
                 y += 18;
                 doc.text(`Equipment: ${trailerTypes.find((t) => t.value === (safe(load.loadType)))?.label ?? "---"}`, leftCol, y);
