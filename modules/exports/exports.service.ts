@@ -3,7 +3,7 @@ import { AppError } from "../../utils/error.js";
 import { sha256Hex } from "../../utils/hash.js";
 import { ExportsRepository } from "./exports.repository.js";
 import { Buffer } from "buffer";
-import { Stop, TimelineEvent } from "@prisma/client";
+import { Accessorial, Attachment, Dispute, EquipmentSpec, Load, LoadExport, PenaltyTerms, RateAgreement, Stop, TimelineEvent, TrackingRequirement } from "@prisma/client";
 import crypto from "crypto";
 import { DateTime } from "luxon";
 import QRCode from "qrcode";
@@ -17,7 +17,18 @@ interface ISnapshot {
         exportedAt: string,
         exportedBy: string,
     },
-    load: any,
+    load: Load & {
+        rateAgreement: RateAgreement & { acessorials: Accessorial[] },
+        equipmentSpec: EquipmentSpec,
+        trackingReq: TrackingRequirement,
+        penaltyTerms: PenaltyTerms,
+
+        stops: Stop[],
+        timelineEvents: TimelineEvent[],
+        attachments: Attachment[],
+        loadExports: LoadExport[],
+        disputes: Dispute[]
+    },
 };
 
 export class ExportsService {
@@ -265,16 +276,16 @@ export class ExportsService {
 
                 doc.fontSize(9).font("Helvetica");
 
-                doc.text(`Broker: ${safe(load.brokerName)}`, leftCol, y);
+                doc.text(`Broker: ${safe(load.brokerCompanyName)}`, leftCol, y);
                 doc.text(`Load #: ${safe(load.loadNumber)}`, rightCol, y);
 
                 y += 18;
-                doc.text(`Origin: ${safe(load.originFullAddress)}`, leftCol, y, { width: 250 });
-                doc.text(`Destination: ${safe(load.destinationFullAddress)}`, rightCol, y, { width: 250 });
+                doc.text(`Origin: ${safe(load.expectedPickupCity)}`, leftCol, y, { width: 250 });
+                doc.text(`Destination: ${safe(load.expectedDeliveryCity)}`, rightCol, y, { width: 250 });
 
                 y += 18;
-                doc.text(`Equipment: ${safe(load.equipmentType)}`, leftCol, y);
-                doc.text(`Temperature: ${safe(load.temperature)}`, rightCol, y);
+                doc.text(`Equipment: ${safe(load.loadType)}`, leftCol, y);
+                doc.text(`Temperature's range: ${safe(load.equipmentSpec.temperatureMinF)} - ${safe(load.equipmentSpec.temperatureMaxF)}`, rightCol, y);
 
 
                 /* --------------------------------------------------
@@ -465,6 +476,7 @@ export class ExportsService {
                         evidences: { include: { attachment: true } },
                     },
                 },
+                rateAgreement: { include: { accessorials: true } }
             },
         });
 
@@ -489,7 +501,7 @@ export class ExportsService {
         if (format === "JSON") {
             fileBuffer = Buffer.from(jsonString);
         } else {
-            fileBuffer = await this.generatePdfFromSnapshot(snapshot);
+            fileBuffer = await this.generatePdfFromSnapshot(snapshot as any);
         }
 
         const checksum = sha256Hex(fileBuffer);

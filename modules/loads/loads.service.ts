@@ -33,7 +33,11 @@ export class LoadsService {
             expectedDeliveryState: input.expectedDeliveryState,
             expectedPickupCity: input.expectedPickupCity,
             expectedPickupState: input.expectedPickupState,
-            rateAgreement: input.rateAgreement
+            rateAgreement: input.rateAgreement,
+            equipmentSpec: input.equipmentSpec,
+            trackingReq: input.trackingReq,
+            penaltyTerms: input.penaltyTerms,
+
         });
     }
 
