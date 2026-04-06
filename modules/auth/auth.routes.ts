@@ -5,3 +5,4 @@ export const authRoutes = Router();
 
 authRoutes.post("/register", register);
 authRoutes.post("/login", login);
+authRoutes.put("/update", register);

@@ -52,6 +52,46 @@ export class AuthService {
             token,
         };
     }
+
+    async update(userId: string, input: any) {
+        try {
+            // 1. Verificar se o usuário existe
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            if (!user) throw new AppError(404, "User not found");
+
+            const dataToUpdate: any = { ...input };
+
+            // 2. Se for atualizar e-mail, verificar se já está em uso por outro
+            if (input.email && input.email !== user.email) {
+                const emailExists = await prisma.user.findUnique({ where: { email: input.email } });
+                if (emailExists) throw new AppError(409, "Email already in use");
+            }
+
+            // 3. Se houver nova senha, fazer o hash
+            if (input.password) {
+                dataToUpdate.passwordHash = await bcrypt.hash(input.password, 10);
+                delete dataToUpdate.password; // Removemos a senha "plana" antes de enviar ao Prisma
+            }
+
+            // 4. Atualizar no banco
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: dataToUpdate,
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    phone: true,
+                    // Não retornamos o passwordHash por segurança
+                }
+            });
+
+            return updatedUser;
+        } catch (error) {
+            console.error("ERRO NO UPDATE SERVICE:", error);
+            throw error;
+        }
+    }
 }
 
 // login - dados de teste
