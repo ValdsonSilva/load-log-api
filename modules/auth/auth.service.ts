@@ -82,6 +82,7 @@ export class AuthService {
                     email: true,
                     name: true,
                     phone: true,
+                    defaultTimeZone: true,
                     // Não retornamos o passwordHash por segurança
                 }
             });
