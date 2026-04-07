@@ -87,8 +87,8 @@ export class AuthService {
             });
 
             return updatedUser;
-        } catch (error) {
-            console.error("ERRO NO UPDATE SERVICE:", error);
+        } catch (error: any) {
+            console.error("ERRO NO UPDATE SERVICE:", error.message);
             throw error;
         }
     }

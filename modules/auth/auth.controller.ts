@@ -28,7 +28,7 @@ export const update: RequestHandler = async (req, res) => {
         const input = UpdateUserSchema.parse(req.body);
         const result = await service.update(userId, input);
         res.status(201).json(result);
-    } catch (erro) {
-        return res.status(500).json({ message: "Erro ao atualizar usuário" })
+    } catch (erro: any) {
+        return res.status(500).json({ message: "Erro ao atualizar usuário" + erro.message })
     }
 };
