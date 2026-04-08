@@ -5,7 +5,7 @@ import { uploadBufferToCloudinary, deleteFromCloudinary } from "../../lib/cloudi
 import { AttachmentsRepository } from "./attachments.repository.js";
 
 export class AttachmentsService {
-  constructor(private repo = new AttachmentsRepository()) {}
+  constructor(private repo = new AttachmentsRepository()) { }
 
   private async assertLoadOwned(userId: string, loadId: string) {
     const load = await prisma.load.findUnique({
@@ -34,28 +34,42 @@ export class AttachmentsService {
     file: Express.Multer.File;
   }) {
     const { userId, loadId, type, file } = params;
-    await this.assertLoadOwned(userId, loadId);
 
-    const checksum = sha256Hex(file.buffer);
+    try {
+      console.log("Passo 1: Verificando posse da carga...");
+      await this.assertLoadOwned(userId, loadId);
 
-    const uploaded = await uploadBufferToCloudinary({
-      buffer: file.buffer,
-      folder: `loads/${loadId}`,
-      fileName: file.originalname,
-    });
+      console.log("Passo 2: Gerando Checksum...");
+      const checksum = sha256Hex(file.buffer);
 
-    return this.repo.create({
-      load: { connect: { id: loadId } },
-      type,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      storageKey: uploaded.publicId,
-      url: uploaded.secureUrl,
-      resourceType: uploaded.resourceType,
-      sizeBytes: uploaded.bytes,
-      checksumSha256: checksum,
-      uploadedBy: { connect: { id: userId } },
-    });
+      console.log("Passo 3: Enviando para Cloudinary...");
+      const uploaded = await uploadBufferToCloudinary({
+        buffer: file.buffer,
+        folder: `loads/${loadId}`,
+        fileName: file.originalname,
+      });
+      console.log("Cloudinary OK:", uploaded.secureUrl);
+
+      console.log("Passo 4: Salvando no Banco...");
+      return this.repo.create({
+        load: { connect: { id: loadId } },
+        type,
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        storageKey: uploaded.publicId,
+        url: uploaded.secureUrl,
+        resourceType: uploaded.resourceType,
+        sizeBytes: uploaded.bytes,
+        checksumSha256: checksum,
+        uploadedBy: { connect: { id: userId } },
+      });
+
+    } catch (error: any) {
+      // ISSO VAI MOSTRAR O ERRO REAL NO LOG DA VERCEL
+      console.error("ERRO NO SERVICE UPLOAD:", error.message);
+      console.error("STACK:", error.stack);
+      throw error; // Re-lança para o controller capturar
+    }
   }
 
   async uploadToEvent(params: {
