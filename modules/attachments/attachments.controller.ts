@@ -6,6 +6,9 @@ import { AttachmentsService } from "./attachments.service.js";
 const service = new AttachmentsService();
 
 export const uploadLoadAttachment: RequestHandler = async (req: any, res) => {
+    console.log("BODY:", req.body); // Verifique se o 'type' aparece aqui
+    console.log("FILE:", req.file); // Verifique se o objeto do arquivo aparece aqui
+
     const userId = req.auth?.userId;
     if (!userId) throw new AppError(401, "Unauthorized");
     if (!req.file) throw new AppError(400, "file is required");
