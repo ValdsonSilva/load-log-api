@@ -10,5 +10,5 @@ export const CreateAttachmentMetaSchema = z.object({
     "SCALE_TICKET",
     "FUEL_RECEIPT",
     "OTHER",
-  ]),
+  ]).default("BOL_PHOTO"),
 });

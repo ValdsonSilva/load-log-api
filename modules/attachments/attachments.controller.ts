@@ -8,7 +8,7 @@ const service = new AttachmentsService();
 export const uploadLoadAttachment: RequestHandler = async (req: any, res) => {
     const userId = req.auth?.userId;
     if (!userId) throw new AppError(401, "Unauthorized");
-    if (!req.f) throw new AppError(400, "file is required");
+    if (!req.file) throw new AppError(400, "file is required");
 
     const meta = CreateAttachmentMetaSchema.parse(req.body);
 
