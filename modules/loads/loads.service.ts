@@ -2,6 +2,7 @@ import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
 import { Load, Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
+import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
 
 export class LoadsService {
     constructor(private repo = new LoadsRepository()) { }
@@ -63,6 +64,9 @@ export class LoadsService {
     }
 
     async updateLoad(userId: string, loadId: string, updateData: any) {
+
+        await assertLoadIsNotCompleted(loadId, this.repo, "Não é permitido atualizar uma carga já finalizada");
+
         // 1. Busca o load atual (importante: inclua o rateAgreement na busca)
         await this.getLoad(userId, loadId);
 

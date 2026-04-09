@@ -35,6 +35,14 @@ export class LoadsRepository {
         });
     }
 
+    lastEventForLoad(loadId: string) {
+        return prisma.timelineEvent.findFirst({
+            where: { loadId },
+            orderBy: [{ sequence: "desc" }],
+            select: { sequence: true, hash: true, type: true },
+        });
+    }
+
     update(id: string, data: Partial<Prisma.LoadUpdateInput>) {
         return prisma.load.update({
             where: { id },

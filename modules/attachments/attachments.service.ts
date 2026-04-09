@@ -45,7 +45,7 @@ export class AttachmentsService {
       console.log("Passo 3: Enviando para Cloudinary...");
       const uploaded = await uploadBufferToCloudinary({
         buffer: file.buffer,
-        folder: `loads/${loadId}`,
+        folder: `loads/${userId}/${loadId}`,
         fileName: file.originalname,
       });
       console.log("Cloudinary OK:", uploaded.secureUrl);

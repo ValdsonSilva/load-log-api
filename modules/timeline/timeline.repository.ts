@@ -32,8 +32,8 @@ export class TimelineRepository {
     lastEventForLoad(loadId: string) {
         return prisma.timelineEvent.findFirst({
             where: { loadId },
-            orderBy: [{ sequence: "desc" }],
-            select: { sequence: true, hash: true },
+            orderBy: [{ sequence: "desc" }], 
+            select: { sequence: true, hash: true, type: true },
         });
     }
 
