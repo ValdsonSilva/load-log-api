@@ -34,8 +34,18 @@ export class LoadsService {
             expectedDeliveryState: input.expectedDeliveryState,
             expectedPickupCity: input.expectedPickupCity,
             expectedPickupState: input.expectedPickupState,
-            rateAgreement: input.rateAgreement,
-            equipmentSpec: input.equipmentSpec,
+            rateAgreement: {
+                create: {
+                    rateAmount: input.rateAgreement?.create?.rateAmount ?? 0,
+                    rateType: input.rateAgreement?.create?.rateType ?? "FLAT",
+                    paymentMethod: input.rateAgreement?.create?.paymentMethod ?? "STANDARD",
+                }
+            },
+            equipmentSpec: {
+                create: {
+                    trailerType: input.equipmentSpec?.create?.trailerType ?? "DRY_VAN",
+                }
+            },
             trackingReq: input.trackingReq,
             penaltyTerms: input.penaltyTerms,
 
