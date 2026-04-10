@@ -7,4 +7,4 @@ export const accessorialsRoutes = Router();
 
 accessorialsRoutes.use(requireAuth);
 
-accessorialsRoutes.delete("/accessorials/:accessorialId", deleteAccessorial)
+accessorialsRoutes.delete("/accessorials/:accessorialId", deleteAccessorial);

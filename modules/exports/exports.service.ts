@@ -386,6 +386,12 @@ export class ExportsService {
                         detY
                     );
 
+                    doc.text(
+                        `Billable: ${(d.billableMinutes / 60).toFixed(2)} hrs`,
+                        START_X + 200,
+                        detY
+                    );
+
                     if (d.flag) {
                         doc.fillColor("red")
                             .text("⚠ Extended waiting time", START_X + 350, detY)
