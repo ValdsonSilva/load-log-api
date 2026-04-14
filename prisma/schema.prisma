@@ -195,6 +195,14 @@ enum InvitationCodeStatus {
   EXPIRED
 }
 
+enum TripPhase {
+  BOBTAIL // Só o caminhão (indo buscar o trailer)
+  DEADHEAD // Caminhão + Trailer vazio (indo carregar)
+  LOADED // Carregado (do Shipper ao Receiver)
+  POST_DELIVERY // Vazio após entrega (até encerrar a jornada)
+  OFF_DUTY // Rastreamento desligado
+}
+
 //
 // MODELS
 //
@@ -279,6 +287,22 @@ model Load {
   carrierDotNumber   String? // numero DOT da transportadora
   carrierMainPhone   String?
 
+  // Novos campos para Deadhead
+  deadheadStartAt        DateTime? // Quando ele clicou em "Start Deadhead"
+  deadheadStartLatitude  Decimal?  @db.Decimal(9, 6)
+  deadheadStartLongitude Decimal?  @db.Decimal(9, 6)
+
+  // Resultados consolidados (calculados quando ele chega no Shipper)
+  deadheadTotalDistance Float? // Em milhas ou KM
+  deadheadTotalMinutes  Int? // Tempo decorrido
+
+  // Acumuladores de Milhas Reais (V1)
+  realMilesBobtail      Float @default(0)
+  realMilesDeadhead     Float @default(0)
+  realMilesLoaded       Float @default(0)
+  realMilesPostDelivery Float @default(0)
+  totalRealMiles        Float @default(0)
+
   // 1:1 spec blocks
   rateAgreement RateAgreement?
   equipmentSpec EquipmentSpec?
@@ -290,14 +314,30 @@ model Load {
   timelineEvents TimelineEvent[]
   attachments    Attachment[] // load-level docs (rate conf, BOL photos, etc.)
 
-  updatedAt   DateTime     @updatedAt
-  loadExports LoadExport[]
-  disputes    Dispute[]
+  updatedAt      DateTime        @updatedAt
+  loadExports    LoadExport[]
+  disputes       Dispute[]
+  locationPoints LocationPoint[]
 
   @@unique([driverId, loadNumber])
   @@index([loadNumber])
   @@index([status])
   @@index([createdAt])
+}
+
+model LocationPoint {
+  id     String @id @default(uuid())
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id])
+
+  latitude  Decimal   @db.Decimal(9, 6)
+  longitude Decimal   @db.Decimal(9, 6)
+  speed     Float? // Para a lógica de detecção de movimento do item 5
+  accuracy  Float? // Para filtrar "GPS drift" do item 8
+  phase     TripPhase // Para saber se essa milha foi Bobtail, Loaded, etc.
+  timestamp DateTime  @default(now())
+
+  @@index([loadId, timestamp])
 }
 
 model Stop {
@@ -353,7 +393,7 @@ model RateAgreement {
 
   rateAmount    Decimal       @db.Decimal(12, 2) // valor da tarifa
   rateType      RateType // variavel de calculo de tarifa
-  quotedMiles   Int? // milhas cotadas
+  quotedMiles   Int? // milhas cotadas no contrato - nota
   paymentMethod PaymentMethod @default(STANDARD) // metodo de pagamento
   quickPayFee   Decimal?      @db.Decimal(12, 2) // taxa adicional para pagamento rápido
 
@@ -379,9 +419,9 @@ model Accessorial {
   rateAgreementId String
   rateAgreement   RateAgreement @relation(fields: [rateAgreementId], references: [id], onDelete: Cascade)
 
-  type   AccessorialType // tipo de serviço adicional
-  amount Decimal?        @db.Decimal(12, 2)
-  notes  String?
+  type        AccessorialType // tipo de serviço adicional
+  amount      Decimal?        @db.Decimal(12, 2)
+  notes       String?
   attachments Attachment[] // fotos de notas/recibos relacionados a esses gastos extras
 
   @@index([rateAgreementId])
@@ -556,10 +596,10 @@ model Attachment {
 
   createdAt        DateTime          @default(now())
   disputeEvidences DisputeEvidence[]
+  accessorials     Accessorial[]
 
   @@index([loadId, type])
   @@index([timelineEventId])
-  accessorials Accessorial[]
 }
 
 model Dispute {

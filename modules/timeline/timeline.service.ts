@@ -2,8 +2,9 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/error.js";
 import { TimelineRepository } from "./timeline.repository.js";
 import { stableStringify, sha256Hex } from "../../utils/hash.js";
-import { Load, type TimelineEvent, TimelineEventType } from "@prisma/client";
+import { Load, PrismaClient, type TimelineEvent, TimelineEventType } from "@prisma/client";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
+import { PrismaClientConstructor } from "../../lib/generated/prisma/internal/class.js";
 
 export class TimelineService {
     constructor(private repo = new TimelineRepository()) { }
@@ -55,7 +56,16 @@ export class TimelineService {
 
         await this.assertEventOccuredAtUnique(loadId, input.type);
 
-        await assertLoadIsNotCompleted(loadId, this.repo, "Não é permitido adicionar eventos a uma carga já finalizada");;
+        await assertLoadIsNotCompleted(loadId, this.repo, "Não é permitido adicionar eventos a uma carga já finalizada");
+
+        if (input.type === "ARRIVED_AT_SHIPPER") {
+            await prisma.load.update({
+                where: { id: loadId },
+                data: {
+                    status: "ACTIVE"
+                }
+            })
+        }
 
         return prisma.$transaction(async (tx: any) => {
             const last = await tx.timelineEvent.findFirst({
