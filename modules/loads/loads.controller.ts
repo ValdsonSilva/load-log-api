@@ -1,10 +1,30 @@
 import type { RequestHandler } from "express";
-import { CreateLoadSchema, ListLoadsSchema } from "./loads.schema.js";
+import { CreateLoadSchema, ListLoadsSchema, LocationPointSchema } from "./loads.schema.js";
 import { LoadsService } from "./loads.service.js";
 import { AppError } from "../../utils/error.js";
-import { Prisma } from "@prisma/client";
 
 const service = new LoadsService();
+
+export const processLocationPoint: RequestHandler = async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) throw new AppError(401, "Unauthorized");
+
+  const loadId = req.params.loadId as string;
+  if (!loadId) throw new AppError(400, "LoadId é obrigatório")
+
+  try {
+    const input = LocationPointSchema.parse(req.body);
+
+    if (!input) throw new AppError(400, "Input invalido");
+
+    const locationPoint = await service.processNewLocationPoint(loadId, input)
+
+    res.status(200).json(locationPoint)
+  } catch (err: any) {
+    console.log("Erro: ", err.message)
+    return res.status(500).json({ message: "Erro ao criar locationPoint", error: err.message })
+  }
+}
 
 export const createLoad: RequestHandler = async (req, res) => {
   const userId = req.auth?.userId;

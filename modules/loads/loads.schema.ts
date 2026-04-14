@@ -96,3 +96,10 @@ export const ListLoadsSchema = z.object({
   status: z.enum(["PRE_TRIP", "DRIVING", "ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   q: z.string().optional(), // busca por loadNumber etc.
 });
+
+export const LocationPointSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  speed: z.number(),
+  accuracy: z.number(),
+})

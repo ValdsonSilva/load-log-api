@@ -49,66 +49,68 @@ export class LoadsService {
         return phaseMap[status] || "OFF_DUTY";
     }
 
-    async processNewLocationPoint(loadId: string, newPoint: any, lastPoint: any) {
+    async processNewLocationPoint(loadId: string, newPoint: any) {
         const { latitude, longitude, speed, accuracy } = newPoint;
+        if (!loadId) return;
 
-        // 1. FILTRO DE PRECISÃO (Item 8)
-        // Ignora pontos com baixa precisão (ex: acima de 30 metros)
+        // 1. FILTRO DE PRECISÃO (Item 8) - Deve ser o primeiro de todos
         if (accuracy > 30) return;
 
-        // 2. FILTRO DE MOVIMENTO (Item 5)
-        // Ignora pontos se o caminhão estiver parado (ex: speed < 1 m/s ou ~3.6 km/h)
-        // Isso evita o "GPS Drift" que infla as milhas enquanto o motorista dorme/come.
-        if (speed < 1) return;
+        // 2. Busca o último ponto registrado
+        const lastPoint = await prisma.locationPoint.findFirst({
+            where: { loadId },
+            orderBy: { createdAt: 'desc' },
+        });
 
-        // 3. CÁLCULO DE DISTÂNCIA (Haversine)
-        const distanceCovered = calculateDeadheadDistance(lastPoint.latitude, lastPoint.longitude, latitude, longitude);
+        let distanceCovered = 0;
+        if (lastPoint) {
+            distanceCovered = calculateDeadheadDistance(
+                Number(lastPoint.latitude),
+                Number(lastPoint.longitude),
+                latitude,
+                longitude
+            );
 
-        // 4. FILTRO DE SALTO MÍNIMO
-        // Só registra se ele andou pelo menos 50 metros para evitar excesso de dados
-        if (distanceCovered < 0.05) return;
-
-        if (!loadId) return
-
-        // busca o status atual da carga em questão
-        const load = await prisma.load.findUnique({
-            where: {
-                id: loadId
-            }
-        })
-
-        if (load?.status === 'CANCELLED') {
-            return; // Para o rastreamento aqui
+            // 3. FILTRO DE MOVIMENTO E SALTO MÍNIMO (Só se já houver um rastro)
+            // Se estiver parado ou andou menos de 50m, ignora para não inflar dados
+            if (speed < 1 || distanceCovered < 0.05) return;
         }
 
-        // 5. UPDATE NO BANCO (Prisma)
-        // Aqui você identifica a fase atual e soma no acumulador correto
-        const columnToIncrement = this.determineTripPhase(load?.status!); // Mapeia o status para a fase
+        // 4. Busca o status atual da carga
+        const load = await prisma.load.findUnique({
+            where: { id: loadId }
+        });
 
-        // 3. Descobre o nome da fase para o log (ex: "DEADHEAD")
-        const phaseName = this.mapStatusToTripPhase(load?.status!);
+        if (!load || load.status === 'CANCELLED') return;
 
-        await prisma.$transaction([
-            prisma.load.update({
-                where: { id: loadId },
-                data: {
-                    [columnToIncrement]: { increment: distanceCovered }, // Ex: incrementa realMilesDeadhead
-                    totalRealMiles: { increment: distanceCovered }
-                }
-            }),
+        const columnToIncrement = this.determineTripPhase(load.status);
+        const phaseName = this.mapStatusToTripPhase(load.status);
 
-            // 6. SALVA O BREADCRUMB (Para a prova real do Item 7)
-            prisma.locationPoint.create({
+        // 5. Executa em transação para garantir integridade
+        await prisma.$transaction(async (tx) => {
+            // Só incrementa se houver distância real (evita erro no primeiro ponto)
+            if (distanceCovered > 0) {
+                await tx.load.update({
+                    where: { id: loadId },
+                    data: {
+                        [columnToIncrement]: { increment: distanceCovered },
+                        totalRealMiles: { increment: distanceCovered }
+                    }
+                });
+            }
+
+            // 6. SALVA O BREADCRUMB (Sempre salva se passar pelos filtros acima)
+            await tx.locationPoint.create({
                 data: {
                     loadId,
                     latitude,
                     longitude,
                     speed,
                     accuracy,
-                    phase: phaseName,   // Agora aqui vai "DEADHEAD", "LOADED", etc.
+                    phase: phaseName,
                 }
-            })
-        ]);
+            });
+        });
     }
 
     async createLoad(userId: string, input: Prisma.LoadCreateInput) {
