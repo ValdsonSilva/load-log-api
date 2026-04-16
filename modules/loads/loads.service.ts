@@ -1,6 +1,6 @@
 import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
-import { Load, LoadStatus, Prisma, TripPhase } from "@prisma/client";
+import { Accessorial, Load, LoadStatus, Prisma, TripPhase } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
 import { calculateDeadheadDistance } from "./calculateDeadHeadDistance.js";
@@ -221,14 +221,30 @@ export class LoadsService {
 
             // Criamos os novos acessórios vinculando-os diretamente ao ID do RateAgreement
             // Isso GARANTE que os antigos não sejam tocados.
-            await prisma.accessorial.createMany({
-                data: accessorialsList.map((acc: any) => ({
-                    type: acc.type,
-                    amount: acc.amount,
-                    notes: acc.notes,
-                    rateAgreementId: rateAgreementId // A chave estrangeira direta
-                }))
-            });
+            // await prisma.accessorial.createMany({
+            //     data: accessorialsList.map((acc: Accessorial) => ({
+            //         type: acc.type,
+            //         amount: acc.amount,
+            //         notes: acc.notes,
+            //         rateAgreementId: rateAgreementId, // A chave estrangeira direta
+            //     })),
+            // });
+            await Promise.all(
+                accessorialsList.map(async (acc: any) => {
+                    return prisma.accessorial.create({
+                        data: {
+                            type: acc.type,
+                            amount: acc.amount,
+                            notes: acc.notes,
+                            rateAgreementId: rateAgreementId,
+                            // ✅ Agora conseguimos conectar os anexos que já existem
+                            attachments: {
+                                connect: acc.attachments.map((id: string) => ({ id }))
+                            }
+                        }
+                    });
+                })
+            );
         }
 
         // 5. Retorna o Load completo (Opcional: fazer um fetch final para vir tudo atualizado)
