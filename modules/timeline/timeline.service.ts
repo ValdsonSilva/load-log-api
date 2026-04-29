@@ -2,9 +2,8 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/error.js";
 import { TimelineRepository } from "./timeline.repository.js";
 import { stableStringify, sha256Hex } from "../../utils/hash.js";
-import { Load, Prisma, PrismaClient, type TimelineEvent, TimelineEventType } from "@prisma/client";
+import { Prisma, TimelineEventType } from "@prisma/client";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
-import { PrismaClientConstructor } from "../../lib/generated/prisma/internal/class.js";
 
 export class TimelineService {
     constructor(private repo = new TimelineRepository()) { }
