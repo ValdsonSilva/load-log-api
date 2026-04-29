@@ -113,47 +113,80 @@ export class LoadsService {
         });
     }
 
-    async createLoad(userId: string, input: Prisma.LoadCreateInput) {
-        // regra: loadNumber único por driver (já está no schema com @@unique([driverId, loadNumber]))
+    // async createLoad(userId: string, input: Prisma.LoadCreateInput) {
+    //     // regra: loadNumber único por driver (já está no schema com @@unique([driverId, loadNumber]))
+    //     return this.repo.create({
+    //         driver: { connect: { id: userId } },
+    //         driverOperatingAs: input.driverOperatingAs,
+    //         loadNumber: input.loadNumber,
+    //         loadType: input.loadType,
+    //         mode: input.mode,
+    //         brokerCompanyName: input.brokerCompanyName,
+    //         brokerMcNumber: input.brokerMcNumber,
+    //         brokerPhone: input.brokerPhone,
+    //         brokerEmail: input.brokerEmail,
+    //         brokerAgentName: input.brokerAgentName,
+    //         brokerAgentPhone: input.brokerAgentPhone,
+    //         brokerAgentEmail: input.brokerAgentEmail,
+    //         dispatcherName: input.dispatcherName,
+    //         dispatcherCompanyName: input.dispatcherCompanyName,
+    //         dispatcherPhone: input.dispatcherPhone,
+    //         dispatcherEmail: input.dispatcherEmail,
+    //         carrierCompanyName: input.carrierCompanyName ?? "N/A",
+    //         carrierMcNumber: input.carrierMcNumber,
+    //         carrierDotNumber: input.carrierDotNumber,
+    //         carrierMainPhone: input.carrierMainPhone,
+    //         expectedDeliveryCity: input.expectedDeliveryCity,
+    //         expectedDeliveryState: input.expectedDeliveryState,
+    //         expectedPickupCity: input.expectedPickupCity,
+    //         expectedPickupState: input.expectedPickupState,
+    //         rateAgreement: {
+    //             create: {
+    //                 rateAmount: input.rateAgreement?.create?.rateAmount ?? 0,
+    //                 rateType: input.rateAgreement?.create?.rateType ?? "FLAT",
+    //                 paymentMethod: input.rateAgreement?.create?.paymentMethod ?? "STANDARD",
+    //                 detentionStartsAfterHours: input.rateAgreement?.create?.detentionStartsAfterHours ?? 2,
+    //                 detentionRatePerHour: input.rateAgreement?.create?.detentionRatePerHour ?? 0,
+    //                 detentionMaxCap: input.rateAgreement?.create?.detentionMaxCap ?? 0,
+    //                 layoverTermsText: input.rateAgreement?.create?.layoverTermsText,
+    //             }
+    //         },
+    //         equipmentSpec: {
+    //             create: {
+    //                 trailerType: input.equipmentSpec?.create?.trailerType ?? "DRY_VAN",
+    //             }
+    //         },
+    //         trackingReq: input.trackingReq,
+    //         penaltyTerms: input.penaltyTerms,
+
+    //     });
+    // }
+
+    async createLoad(userId: string, input: any) { // Use um DTO aqui se possível
+        // Extraímos os dados que vieram do cliente
+        const { rateAgreement, equipmentSpec, ...loadData } = input;
+
         return this.repo.create({
+            ...loadData,
             driver: { connect: { id: userId } },
-            driverOperatingAs: input.driverOperatingAs,
-            loadNumber: input.loadNumber,
-            loadType: input.loadType,
-            mode: input.mode,
-            brokerCompanyName: input.brokerCompanyName,
-            brokerMcNumber: input.brokerMcNumber,
-            brokerPhone: input.brokerPhone,
-            brokerEmail: input.brokerEmail,
-            brokerAgentName: input.brokerAgentName,
-            brokerAgentPhone: input.brokerAgentPhone,
-            brokerAgentEmail: input.brokerAgentEmail,
-            dispatcherName: input.dispatcherName,
-            dispatcherCompanyName: input.dispatcherCompanyName,
-            dispatcherPhone: input.dispatcherPhone,
-            dispatcherEmail: input.dispatcherEmail,
-            carrierCompanyName: input.carrierCompanyName ?? "N/A",
-            carrierMcNumber: input.carrierMcNumber,
-            carrierDotNumber: input.carrierDotNumber,
-            carrierMainPhone: input.carrierMainPhone,
-            expectedDeliveryCity: input.expectedDeliveryCity,
-            expectedDeliveryState: input.expectedDeliveryState,
-            expectedPickupCity: input.expectedPickupCity,
-            expectedPickupState: input.expectedPickupState,
+
+            // Aqui está a mágica:
             rateAgreement: {
                 create: {
-                    rateAmount: input.rateAgreement?.create?.rateAmount ?? 0,
-                    rateType: input.rateAgreement?.create?.rateType ?? "FLAT",
-                    paymentMethod: input.rateAgreement?.create?.paymentMethod ?? "STANDARD",
+                    rateAmount: rateAgreement?.rateAmount ?? 0,
+                    rateType: rateAgreement?.rateType ?? "FLAT",
+                    paymentMethod: rateAgreement?.paymentMethod ?? "STANDARD",
+                    detentionStartsAfterHours: rateAgreement?.detentionStartsAfterHours ?? 2,
+                    detentionRatePerHour: rateAgreement?.detentionRatePerHour ?? 0,
+                    detentionMaxCap: rateAgreement?.detentionMaxCap ?? 0,
+                    layoverTermsText: rateAgreement?.layoverTermsText,
                 }
             },
             equipmentSpec: {
                 create: {
-                    trailerType: input.equipmentSpec?.create?.trailerType ?? "DRY_VAN",
+                    trailerType: equipmentSpec?.trailerType ?? "DRY_VAN",
                 }
-            },
-            trackingReq: input.trackingReq,
-            penaltyTerms: input.penaltyTerms,
+            }
 
         });
     }
