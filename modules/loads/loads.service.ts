@@ -1,6 +1,6 @@
 import { LoadsRepository } from "./loads.repository.js";
 import { AppError } from "../../utils/error.js";
-import { Accessorial, Load, LoadStatus, Prisma, TripPhase } from "@prisma/client";
+import { Load, LoadStatus, Prisma, TripPhase } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
 import { calculateDeadheadDistance } from "./calculateDeadHeadDistance.js";
@@ -59,7 +59,7 @@ export class LoadsService {
         // 2. Busca o último ponto registrado
         const lastPoint = await prisma.locationPoint.findFirst({
             where: { loadId },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { timestamp: "desc" },
         });
 
         let distanceCovered = 0;
