@@ -210,10 +210,12 @@ enum TripPhase {
 model User {
   id              String  @id @default(uuid())
   email           String  @unique
-  passwordHash    String
+  passwordHash    String?
   name            String?
   phone           String?
   defaultTimeZone String? // IANA tz, ex: "America/Chicago"
+  googleId  String?  @unique
+  avatarUrl String?
 
   loads Load[]
 

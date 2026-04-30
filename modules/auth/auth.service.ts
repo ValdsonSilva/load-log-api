@@ -43,7 +43,7 @@ export class AuthService {
         const user = await prisma.user.findUnique({ where: { email: input.email } });
         if (!user) throw new AppError(401, "Invalid credentials - (email)");
 
-        const ok = await bcrypt.compare(input.password, user.passwordHash);
+        const ok = await bcrypt.compare(input.password, user.passwordHash!);
         if (!ok) throw new AppError(401, "Invalid credentials - (password)");
 
         const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
