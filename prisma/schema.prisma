@@ -214,8 +214,9 @@ model User {
   name            String?
   phone           String?
   defaultTimeZone String? // IANA tz, ex: "America/Chicago"
-  googleId  String?  @unique
-  avatarUrl String?
+  googleId        String? @unique
+  avatarUrl       String?
+  isActive        Boolean @default(true) // Adicione este campo
 
   loads Load[]
 

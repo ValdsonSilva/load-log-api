@@ -5,6 +5,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { prisma } from "../../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
+import { AppError } from "../../utils/error.js";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const service = new AuthService();
@@ -74,5 +75,26 @@ export const googleAuth = async (req: Request, res: Response) => {
         return res.json({ token, user });
     } catch (error) {
         return res.status(401).json({ message: "Google authentication failed" });
+    }
+};
+
+export const deactivateAccount: RequestHandler = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        if (!userId) throw new AppError(401, "Unauthorized");
+
+        // "Deletamos" a conta apenas alterando a flag para false
+        await prisma.user.update({
+            where: { id: userId },
+            data: { isActive: false },
+        });
+
+        return res.status(200).json({
+            message: "Conta desativada com sucesso. Seus dados foram preservados por razões legais e de histórico."
+        });
+
+    } catch (error: any) {
+        console.error("Erro ao desativar conta:", error);
+        return res.status(500).json({ message: "Erro interno ao desativar a conta." });
     }
 };
