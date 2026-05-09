@@ -1,0 +1,237 @@
+import { z } from "zod";
+
+export const ParseLoadDocumentBodySchema = z.object({
+    rawText: z.string().min(20).optional(),
+    documentType: z
+        .enum(["RATE_CONFIRMATION", "BOL", "DISPATCH_SHEET", "OTHER"])
+        .default("OTHER"),
+});
+
+export const LoadDraftJsonSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: [
+        "status",
+        "confidence",
+        "draft",
+        "fieldConfidence",
+        "missingFields",
+        "warnings",
+    ],
+    properties: {
+        status: {
+            type: "string",
+            enum: ["needs_review"],
+        },
+        confidence: {
+            type: "number",
+            minimum: 0,
+            maximum: 1,
+        },
+        draft: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+                loadNumber: { type: ["string", "null"] },
+                proNumber: { type: ["string", "null"] },
+                bolNumber: { type: ["string", "null"] },
+                bookingRefNumber: { type: ["string", "null"] },
+                pickupNumber: { type: ["string", "null"] },
+                poNumber: { type: ["string", "null"] },
+
+                loadType: {
+                    type: ["string", "null"],
+                    enum: ["DRY_VAN", "REEFER", "FLATBED", "STEPDECK", "POWER_ONLY", "OTHER", null],
+                },
+                mode: {
+                    type: ["string", "null"],
+                    enum: ["LIVE_LIVE", "LIVE_DROP", "DROP_LIVE", "DROP_DROP", null],
+                },
+
+                brokerCompanyName: { type: ["string", "null"] },
+                brokerMcNumber: { type: ["string", "null"] },
+                brokerPhone: { type: ["string", "null"] },
+                brokerEmail: { type: ["string", "null"] },
+                brokerAgentName: { type: ["string", "null"] },
+                brokerAgentPhone: { type: ["string", "null"] },
+                brokerAgentEmail: { type: ["string", "null"] },
+
+                carrierCompanyName: { type: ["string", "null"] },
+                carrierMcNumber: { type: ["string", "null"] },
+                carrierDotNumber: { type: ["string", "null"] },
+
+                commodityDesc: { type: ["string", "null"] },
+                trailerNumber: { type: ["string", "null"] },
+                sealNumber: { type: ["string", "null"] },
+
+                expectedPickupCity: { type: ["string", "null"] },
+                expectedPickupState: { type: ["string", "null"] },
+                expectedDeliveryCity: { type: ["string", "null"] },
+                expectedDeliveryState: { type: ["string", "null"] },
+
+                rateAgreement: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                        rateAmount: { type: ["number", "null"] },
+                        rateType: {
+                            type: ["string", "null"],
+                            enum: ["FLAT", "PER_MILE", "OTHER", null],
+                        },
+                        quotedMiles: { type: ["number", "null"] },
+                        paymentMethod: {
+                            type: ["string", "null"],
+                            enum: ["FACTORING", "QUICK_PAY", "STANDARD", null],
+                        },
+                        detentionStartsAfterHours: { type: ["number", "null"] },
+                        detentionRatePerHour: { type: ["number", "null"] },
+                        layoverTermsText: { type: ["string", "null"] },
+                        tonuTermsText: { type: ["string", "null"] },
+                        notes: { type: ["string", "null"] },
+                    },
+                    required: [
+                        "rateAmount",
+                        "rateType",
+                        "quotedMiles",
+                        "paymentMethod",
+                        "detentionStartsAfterHours",
+                        "detentionRatePerHour",
+                        "layoverTermsText",
+                        "tonuTermsText",
+                        "notes",
+                    ],
+                },
+
+                equipmentSpec: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                        trailerType: {
+                            type: ["string", "null"],
+                            enum: ["DRY_VAN", "REEFER", "FLATBED", "STEPDECK", "POWER_ONLY", "OTHER", null],
+                        },
+                        temperatureSetpointF: { type: ["number", "null"] },
+                        temperatureMinF: { type: ["number", "null"] },
+                        temperatureMaxF: { type: ["number", "null"] },
+                        weightLbs: { type: ["number", "null"] },
+                        palletCount: { type: ["number", "null"] },
+                        pieceCount: { type: ["number", "null"] },
+                        hazmat: { type: ["boolean", "null"] },
+                        highValue: { type: ["boolean", "null"] },
+                        sealRequired: { type: ["boolean", "null"] },
+                    },
+                    required: [
+                        "trailerType",
+                        "temperatureSetpointF",
+                        "temperatureMinF",
+                        "temperatureMaxF",
+                        "weightLbs",
+                        "palletCount",
+                        "pieceCount",
+                        "hazmat",
+                        "highValue",
+                        "sealRequired",
+                    ],
+                },
+
+                stops: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        additionalProperties: false,
+                        properties: {
+                            type: {
+                                type: "string",
+                                enum: ["PICKUP", "DELIVERY", "STOP_OFF"],
+                            },
+                            sequence: { type: "number" },
+                            facilityName: { type: ["string", "null"] },
+                            phone: { type: ["string", "null"] },
+                            street1: { type: ["string", "null"] },
+                            street2: { type: ["string", "null"] },
+                            city: { type: ["string", "null"] },
+                            state: { type: ["string", "null"] },
+                            postalCode: { type: ["string", "null"] },
+                            country: { type: ["string", "null"] },
+                            appointmentAt: { type: ["string", "null"] },
+                            appointmentType: {
+                                type: ["string", "null"],
+                                enum: ["FCFS", "APPOINTMENT_REQUIRED", "UNKNOWN", null],
+                            },
+                            operatingHoursText: { type: ["string", "null"] },
+                            checkInInstructions: { type: ["string", "null"] },
+                            specialInstructions: { type: ["string", "null"] },
+                            handlingType: {
+                                type: ["string", "null"],
+                                enum: ["LIVE_LOAD", "LIVE_UNLOAD", "DROP_HOOK", "UNKNOWN", null],
+                            },
+                        },
+                        required: [
+                            "type",
+                            "sequence",
+                            "facilityName",
+                            "phone",
+                            "street1",
+                            "street2",
+                            "city",
+                            "state",
+                            "postalCode",
+                            "country",
+                            "appointmentAt",
+                            "appointmentType",
+                            "operatingHoursText",
+                            "checkInInstructions",
+                            "specialInstructions",
+                            "handlingType",
+                        ],
+                    },
+                },
+            },
+            required: [
+                "loadNumber",
+                "proNumber",
+                "bolNumber",
+                "bookingRefNumber",
+                "pickupNumber",
+                "poNumber",
+                "loadType",
+                "mode",
+                "brokerCompanyName",
+                "brokerMcNumber",
+                "brokerPhone",
+                "brokerEmail",
+                "brokerAgentName",
+                "brokerAgentPhone",
+                "brokerAgentEmail",
+                "carrierCompanyName",
+                "carrierMcNumber",
+                "carrierDotNumber",
+                "commodityDesc",
+                "trailerNumber",
+                "sealNumber",
+                "expectedPickupCity",
+                "expectedPickupState",
+                "expectedDeliveryCity",
+                "expectedDeliveryState",
+                "rateAgreement",
+                "equipmentSpec",
+                "stops",
+            ],
+        },
+        fieldConfidence: {
+            type: "object",
+            additionalProperties: {
+                type: "string",
+                enum: ["high", "medium", "low", "missing"],
+            },
+        },
+        missingFields: {
+            type: "array",
+            items: { type: "string" },
+        },
+        warnings: {
+            type: "array",
+            items: { type: "string" },
+        },
+    },
+} as const;

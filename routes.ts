@@ -9,11 +9,13 @@ import { exportsRoutes } from "./modules/exports/exports.routes.js";
 import { timelineRoutes } from "./modules/timeline/timeline.routes.js";
 import { stopsRoutes } from "./modules/stops/stops.routes.js";
 import { accessorialsRoutes } from "./modules/acessorials/accessorials.routes.js";
+import { ocrRoutes } from "./modules/ocr/ocr.routes.js";
 
 export const routes = Router();
 
 routes.use("/auth", authRoutes);
 routes.use("/loads", loadsRoutes);
+routes.use("/ocr", ocrRoutes);
 routes.use("/", [
     disputesRoutes,
     invitationsRoutes,

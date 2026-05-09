@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import { z } from "zod";
 
@@ -10,6 +9,12 @@ const EnvSchema = z.object({
     CLOUDINARY_API_KEY: z.string().min(1),
     CLOUDINARY_API_SECRET: z.string().min(1),
     GOOGLE_CLIENT_ID: z.string().min(1),
+
+    OPENAI_API_KEY: z.string().min(1).optional(),
+    OPENAI_MODEL: z.string().default("gpt-4.1-mini"),
+    GOOGLE_DOCUMENT_AI_PROJECT_ID: z.string().optional(),
+    GOOGLE_DOCUMENT_AI_LOCATION: z.string().optional(),
+    GOOGLE_DOCUMENT_AI_PROCESSOR_ID: z.string().optional(),
 });
 
 export const env = EnvSchema.parse(process.env);
