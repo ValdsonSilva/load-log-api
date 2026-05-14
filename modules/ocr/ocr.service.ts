@@ -36,16 +36,9 @@ export class OcrService {
     private async extractTextFromFile(file?: Express.Multer.File) {
         if (!file) return null;
 
-        /**
-         * MVP decision:
-         * For now, do not pretend OCR exists if no provider is connected.
-         * Either:
-         * 1. App sends rawText from local OCR.
-         * 2. Later plug Google Document AI here.
-         */
         throw new AppError(
             501,
-            "Backend OCR is not configured yet. Send rawText from the app or connect Document AI."
+            "Backend OCR is not configured yet. Send rawText from the app."
         );
     }
 }
