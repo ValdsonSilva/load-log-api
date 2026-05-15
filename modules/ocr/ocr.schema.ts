@@ -7,100 +7,148 @@ export const ParseLoadDocumentBodySchema = z.object({
         .default("OTHER"),
 });
 
-export const LoadDraftJsonSchema = {
-    type: "object",
-    additionalProperties: false,
-    required: [
-        "status",
-        "confidence",
-        "draft",
-        "fieldConfidence",
-        "missingFields",
-        "warnings",
-    ],
-    properties: {
-        status: {
-            type: "string",
-            enum: ["needs_review"],
-        },
-        confidence: {
-            type: "number",
-        },
-        draft: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-                "loadNumber",
-                "brokerCompanyName",
-                "pickupLocation",
-                "pickupDate",
-                "pickupTime",
-                "deliveryLocation",
-                "deliveryDate",
-                "deliveryTime",
-                "rateAmount",
-                "commodity",
-                "weightLbs",
-                "equipmentType",
-                "specialInstructions",
-            ],
-            properties: {
-                loadNumber: { type: ["string", "null"] },
-                brokerCompanyName: { type: ["string", "null"] },
-                pickupLocation: { type: ["string", "null"] },
-                pickupDate: { type: ["string", "null"] },
-                pickupTime: { type: ["string", "null"] },
-                deliveryLocation: { type: ["string", "null"] },
-                deliveryDate: { type: ["string", "null"] },
-                deliveryTime: { type: ["string", "null"] },
-                rateAmount: { type: ["number", "null"] },
-                commodity: { type: ["string", "null"] },
-                weightLbs: { type: ["number", "null"] },
-                equipmentType: { type: ["string", "null"] },
-                specialInstructions: { type: ["string", "null"] },
-            },
-        },
-        fieldConfidence: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-                "loadNumber",
-                "brokerCompanyName",
-                "pickupLocation",
-                "pickupDate",
-                "pickupTime",
-                "deliveryLocation",
-                "deliveryDate",
-                "deliveryTime",
-                "rateAmount",
-                "commodity",
-                "weightLbs",
-                "equipmentType",
-                "specialInstructions",
-            ],
-            properties: {
-                loadNumber: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                brokerCompanyName: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                pickupLocation: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                pickupDate: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                pickupTime: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                deliveryLocation: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                deliveryDate: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                deliveryTime: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                rateAmount: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                commodity: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                weightLbs: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                equipmentType: { type: "string", enum: ["high", "medium", "low", "missing"] },
-                specialInstructions: { type: "string", enum: ["high", "medium", "low", "missing"] },
-            },
-        },
-        missingFields: {
-            type: "array",
-            items: { type: "string" },
-        },
-        warnings: {
-            type: "array",
-            items: { type: "string" },
-        },
-    },
-} as const;
+export const LoadDraftTopLevelKeys = [
+    "loadNumber",
+    "proNumber",
+    "bolNumber",
+    "bookingRefNumber",
+    "trailerNumber",
+    "containerNumber",
+    "sealNumber",
+    "commodityDesc",
+    "pickupNumber",
+    "poNumber",
+
+    "expectedPickupCity",
+    "expectedPickupState",
+    "expectedDeliveryCity",
+    "expectedDeliveryState",
+
+    "brokerCompanyName",
+    "brokerMcNumber",
+    "brokerPhone",
+    "brokerEmail",
+    "brokerAgentName",
+    "brokerAgentPhone",
+    "brokerAgentEmail",
+
+    "dispatcherName",
+    "dispatcherCompanyName",
+    "dispatcherPhone",
+    "dispatcherEmail",
+
+    "carrierCompanyName",
+    "carrierMcNumber",
+    "carrierDotNumber",
+    "carrierMainPhone",
+] as const;
+
+export const RateAgreementKeys = [
+    "rateAmount",
+    "rateType",
+    "quotedMiles",
+    "paymentMethod",
+    "quickPayFee",
+    "detentionStartsAfterHours",
+    "detentionRatePerHour",
+    "detentionMaxCap",
+    "layoverTermsText",
+    "tonuTermsText",
+    "notes",
+] as const;
+
+export const EquipmentSpecKeys = [
+    "trailerType",
+    "temperatureSetpointF",
+    "temperatureMinF",
+    "temperatureMaxF",
+    "weightLbs",
+    "palletCount",
+    "pieceCount",
+    "hazmat",
+    "highValue",
+    "sealRequired",
+    "securementRequired",
+    "securementMethods",
+] as const;
+
+export type ConfidenceLevel = "high" | "medium" | "low" | "missing";
+
+export type LoadDraftResponse = {
+    status: "needs_review";
+    confidence: number;
+    draft: {
+        loadNumber: string | null;
+        proNumber: string | null;
+        bolNumber: string | null;
+        bookingRefNumber: string | null;
+        trailerNumber: string | null;
+        containerNumber: string | null;
+        sealNumber: string | null;
+        commodityDesc: string | null;
+        pickupNumber: string | null;
+        poNumber: string | null;
+
+        expectedPickupCity: string | null;
+        expectedPickupState: string | null;
+        expectedDeliveryCity: string | null;
+        expectedDeliveryState: string | null;
+
+        brokerCompanyName: string | null;
+        brokerMcNumber: string | null;
+        brokerPhone: string | null;
+        brokerEmail: string | null;
+        brokerAgentName: string | null;
+        brokerAgentPhone: string | null;
+        brokerAgentEmail: string | null;
+
+        dispatcherName: string | null;
+        dispatcherCompanyName: string | null;
+        dispatcherPhone: string | null;
+        dispatcherEmail: string | null;
+
+        carrierCompanyName: string | null;
+        carrierMcNumber: string | null;
+        carrierDotNumber: string | null;
+        carrierMainPhone: string | null;
+
+        rateAgreement: {
+            rateAmount: number | null;
+            rateType: "FLAT" | "PER_MILE" | "OTHER" | null;
+            quotedMiles: number | null;
+            paymentMethod: string | null;
+            quickPayFee: number | null;
+            detentionStartsAfterHours: number | null;
+            detentionRatePerHour: number | null;
+            detentionMaxCap: number | null;
+            layoverTermsText: string | null;
+            tonuTermsText: string | null;
+            notes: string | null;
+        };
+
+        equipmentSpec: {
+            trailerType:
+            | "DRY_VAN"
+            | "REEFER"
+            | "FLATBED"
+            | "STEPDECK"
+            | "POWER_ONLY"
+            | "OTHER"
+            | null;
+            temperatureSetpointF: number | null;
+            temperatureMinF: number | null;
+            temperatureMaxF: number | null;
+            weightLbs: number | null;
+            palletCount: number | null;
+            pieceCount: number | null;
+            hazmat: boolean | null;
+            highValue: boolean | null;
+            sealRequired: boolean | null;
+            securementRequired: boolean | null;
+            securementMethods: string[];
+        };
+    };
+    fieldConfidence: Record<string, ConfidenceLevel>;
+    missingFields: string[];
+    warnings: string[];
+};
