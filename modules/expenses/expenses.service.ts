@@ -251,7 +251,7 @@ export class ExpensesService {
             where: {
                 load: {
                     id: loadId,
-                    userId,
+                    driverId: userId,
                 },
             },
             select: {
