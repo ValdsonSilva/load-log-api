@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { loadsRoutes } from "../loads/loads.routes";
 import { requireAuth } from "../../middlewares/auth";
 import { deleteAccessorial } from "./accessorials.controller";
 
