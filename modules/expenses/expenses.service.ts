@@ -266,13 +266,13 @@ export class ExpensesService {
         };
     }
 
-    private async findRateAgreementForUserLoad(loadId: string, userId: string) {
+    private async findRateAgreementForUserLoad(loadId: string, driverId: string) {
         const rateAgreement = await prisma.rateAgreement.findFirst({
             where: {
                 load: {
                     is: {
                         id: loadId,
-                        userId,
+                        driverId,
                     },
                 },
             },
