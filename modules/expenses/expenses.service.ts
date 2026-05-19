@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/error.js";
 
 type ListExpensesInput = {
-    userId: string;
+    driverId: string;
     loadId?: string;
     type?: string;
     from?: Date;
@@ -10,7 +10,7 @@ type ListExpensesInput = {
 };
 
 type CreateExpenseInput = {
-    userId: string;
+    driverId: string;
     loadId: string;
     type: any;
     amount: number;
@@ -22,7 +22,7 @@ type CreateExpenseInput = {
 };
 
 type UpdateExpenseInput = {
-    userId: string;
+    driverId: string;
     id: string;
     loadId?: string;
     type?: any;
@@ -41,7 +41,7 @@ export class ExpensesService {
                 is: {
                     load: {
                         is: {
-                            userId: input.userId,
+                            driverId: input.driverId,
                         },
                     },
                 },
@@ -115,7 +115,7 @@ export class ExpensesService {
     async create(input: CreateExpenseInput) {
         const rateAgreement = await this.findRateAgreementForUserLoad(
             input.loadId,
-            input.userId
+            input.driverId
         );
 
         const accessorial = await prisma.accessorial.create({
@@ -155,7 +155,7 @@ export class ExpensesService {
                     is: {
                         load: {
                             is: {
-                                driverId: input.userId,
+                                driverId: input.driverId,
                             },
                         },
                     },
@@ -184,7 +184,7 @@ export class ExpensesService {
         if (input.loadId) {
             const nextRateAgreement = await this.findRateAgreementForUserLoad(
                 input.loadId,
-                input.userId
+                input.driverId
             );
 
             nextRateAgreementId = nextRateAgreement.id;
