@@ -21,21 +21,40 @@ function getUserId(req: any) {
 }
 
 export const listExpenses: RequestHandler = async (req: any, res) => {
-    const userId = getUserId(req);
+    try {
+        const userId = getUserId(req);
 
-    const { query } = listExpensesSchema.parse({
-        query: req.query,
-    });
+        console.log("GET /expenses auth userId:", userId);
+        console.log("GET /expenses query:", req.query);
 
-    const result = await service.list({
-        userId,
-        loadId: query.loadId,
-        type: query.type,
-        from: query.from,
-        to: query.to,
-    });
+        const { query } = listExpensesSchema.parse({
+            query: req.query,
+        });
 
-    res.json(result);
+        const result = await service.list({
+            userId,
+            loadId: query.loadId,
+            type: query.type,
+            from: query.from,
+            to: query.to,
+        });
+
+        return res.json(result);
+    } catch (err: any) {
+        console.error("GET /expenses ERROR:", {
+            name: err?.name,
+            message: err?.message,
+            code: err?.code,
+            meta: err?.meta,
+            stack: err?.stack,
+        });
+
+        return res.status(500).json({
+            error: err?.message || "Failed to list expenses",
+            code: err?.code ?? null,
+            meta: err?.meta ?? null,
+        });
+    }
 };
 
 export const createExpense: RequestHandler = async (req: any, res) => {
