@@ -32,7 +32,7 @@ export const listExpenses: RequestHandler = async (req: any, res) => {
         });
 
         const result = await service.list({
-            userId,
+            driverId: userId,
             loadId: query.loadId,
             type: query.type,
             from: query.from,
@@ -65,7 +65,7 @@ export const createExpense: RequestHandler = async (req: any, res) => {
     });
 
     const result = await service.create({
-        userId,
+        driverId: userId,
         loadId: body.loadId,
         type: body.type,
         amount: body.amount,
@@ -88,7 +88,7 @@ export const updateExpense: RequestHandler = async (req: any, res) => {
     });
 
     const result = await service.update({
-        userId,
+        driverId: userId,
         id: params.id,
         loadId: body.loadId,
         type: body.type,
