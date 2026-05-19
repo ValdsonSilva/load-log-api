@@ -38,14 +38,18 @@ export class ExpensesService {
     async list(input: ListExpensesInput) {
         const where: any = {
             rateAgreement: {
-                load: {
-                    userId: input.userId,
+                is: {
+                    load: {
+                        is: {
+                            userId: input.userId,
+                        },
+                    },
                 },
             },
         };
 
         if (input.loadId) {
-            where.rateAgreement.load.id = input.loadId;
+            where.rateAgreement.is.load.is.id = input.loadId;
         }
 
         if (input.type) {
@@ -148,8 +152,12 @@ export class ExpensesService {
             where: {
                 id: input.id,
                 rateAgreement: {
-                    load: {
-                        driverId: input.userId,
+                    is: {
+                        load: {
+                            is: {
+                                driverId: input.userId,
+                            },
+                        },
                     },
                 },
             },
@@ -191,11 +199,19 @@ export class ExpensesService {
                 type: input.type,
                 amount: input.amount,
                 currency: input.currency?.toUpperCase(),
-                vendor: input.vendor === undefined ? undefined : this.nullableString(input.vendor),
+                vendor:
+                    input.vendor === undefined
+                        ? undefined
+                        : this.nullableString(input.vendor),
                 location:
-                    input.location === undefined ? undefined : this.nullableString(input.location),
+                    input.location === undefined
+                        ? undefined
+                        : this.nullableString(input.location),
                 expenseDate: input.expenseDate,
-                notes: input.notes === undefined ? undefined : this.nullableString(input.notes),
+                notes:
+                    input.notes === undefined
+                        ? undefined
+                        : this.nullableString(input.notes),
             },
             include: {
                 rateAgreement: {
@@ -220,8 +236,12 @@ export class ExpensesService {
             where: {
                 id: input.id,
                 rateAgreement: {
-                    load: {
-                        driverId: input.userId,
+                    is: {
+                        load: {
+                            is: {
+                                driverId: input.userId,
+                            },
+                        },
                     },
                 },
             },
@@ -250,8 +270,10 @@ export class ExpensesService {
         const rateAgreement = await prisma.rateAgreement.findFirst({
             where: {
                 load: {
-                    id: loadId,
-                    driverId: userId,
+                    is: {
+                        id: loadId,
+                        userId,
+                    },
                 },
             },
             select: {
