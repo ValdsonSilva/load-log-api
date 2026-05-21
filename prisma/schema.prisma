@@ -209,6 +209,15 @@ enum TripPhase {
   OFF_DUTY // Rastreamento desligado
 }
 
+enum StopStatus {
+  PLANNED
+  ARRIVED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 //
 // MODELS
 //
@@ -355,12 +364,11 @@ model Stop {
   load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
 
   type     StopType
-  sequence Int // 1..N (permite futuro multi-stop)
+  sequence Int
 
   facilityName String
   phone        String?
 
-  // Full address (required no doc)
   street1    String
   street2    String?
   city       String
@@ -368,30 +376,36 @@ model Stop {
   postalCode String
   country    String  @default("US")
 
-  // Appointment / operating
   appointmentType     AppointmentType @default(UNKNOWN)
-  appointmentAt       DateTime? // stored UTC
-  operatingHoursText  String? // free text
+  appointmentAt       DateTime?
+  operatingHoursText  String?
   checkInInstructions String?
 
-  // Dock/door info (optional at creation, often filled later)
   dockDoorInfo String?
 
-  // Special requirements (lumper/PPE/ID/guard shack)
   lumperRequired      Boolean @default(false)
   ppeRequired         Boolean @default(false)
   idRequired          Boolean @default(false)
   guardShackCheckIn   Boolean @default(false)
   specialInstructions String?
 
-  // Live vs Drop, etc.
   handlingType HandlingType @default(UNKNOWN)
+
+  status                  StopStatus @default(PLANNED)
+  actualArrivedAt         DateTime?
+  actualCheckedInAt       DateTime?
+  actualStartedAt         DateTime?
+  actualCompletedAt       DateTime?
+  lastTimelineEventId     String?
+  autoUpdatedFromTimeline Boolean    @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([loadId, sequence])
   @@index([loadId, type])
+  @@index([status])
+  @@index([lastTimelineEventId])
 }
 
 // tabela principal de termos de tarifa

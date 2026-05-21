@@ -4,6 +4,9 @@ import { TimelineRepository } from "./timeline.repository.js";
 import { stableStringify, sha256Hex } from "../../utils/hash.js";
 import { Prisma, TimelineEventType } from "@prisma/client";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
+import { StopAutomationService } from "../stops/stop-automation.service.js";
+
+const stopAutomationService = new StopAutomationService();
 
 export class TimelineService {
     constructor(private repo = new TimelineRepository()) { }
@@ -121,6 +124,14 @@ export class TimelineService {
             });
 
             if (!ev) throw new AppError(500, "Falha ao criar evento de timeline");
+
+            await stopAutomationService.handleTimelineEventWithTx(tx, {
+                id: ev.id,
+                loadId: ev.loadId,
+                type: ev.type,
+                occurredAt: ev.createdAt,
+                notes: ev.notes,
+            });
 
             return ev;
         });
