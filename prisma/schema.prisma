@@ -218,6 +218,12 @@ enum StopStatus {
   CANCELLED
 }
 
+enum UserRole {
+  DRIVER
+  ADMIN
+  SUPER_ADMIN
+}
+
 //
 // MODELS
 //
@@ -232,6 +238,7 @@ model User {
   googleId        String? @unique
   avatarUrl       String?
   isActive        Boolean @default(true) // Adicione este campo
+  role UserRole @default(DRIVER)
 
   loads Load[]
 
