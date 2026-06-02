@@ -235,16 +235,42 @@ model User {
 
   loads Load[]
 
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  timelineEvents         TimelineEvent[]
-  timelineEventRevisions TimelineEventRevision[]
-  loadExports            LoadExport[]
-  attachments            Attachment[]
-  disputes               Dispute[]
-  subscription           Subscription?
-  invitationCodes        InvitationCode[]
-  invitationRedemptions  InvitationRedemption[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  timelineEvents           TimelineEvent[]
+  timelineEventRevisions   TimelineEventRevision[]
+  loadExports              LoadExport[]
+  attachments              Attachment[]
+  disputes                 Dispute[]
+  subscription             Subscription?
+  invitationCodes          InvitationCode[]
+  invitationRedemptions    InvitationRedemption[]
+  loadBaseDetailsRevisions LoadBaseDetailsRevision[]
+}
+
+model LoadBaseDetailsRevision {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  editedById String
+  editedBy   User   @relation(fields: [editedById], references: [id], onDelete: Restrict)
+
+  version Int
+
+  before  Json
+  after   Json
+  changes Json
+
+  reason       String?
+  revisionHash String
+
+  createdAt DateTime @default(now())
+
+  @@unique([loadId, version])
+  @@index([loadId, createdAt])
+  @@index([editedById])
 }
 
 model Load {
@@ -332,10 +358,11 @@ model Load {
   timelineEvents TimelineEvent[]
   attachments    Attachment[] // load-level docs (rate conf, BOL photos, etc.)
 
-  updatedAt      DateTime        @updatedAt
-  loadExports    LoadExport[]
-  disputes       Dispute[]
-  locationPoints LocationPoint[]
+  updatedAt                DateTime                  @updatedAt
+  loadExports              LoadExport[]
+  disputes                 Dispute[]
+  locationPoints           LocationPoint[]
+  loadBaseDetailsRevisions LoadBaseDetailsRevision[]
 
   @@unique([driverId, loadNumber])
   @@index([loadNumber])

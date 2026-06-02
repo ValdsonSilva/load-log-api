@@ -203,29 +203,22 @@ export class LoadsService {
                 rateAgreementId = newRateAgreement.id
             }
 
-            // Criamos os novos acessórios vinculando-os diretamente ao ID do RateAgreement
-            // Isso GARANTE que os antigos não sejam tocados.
-            // await prisma.accessorial.createMany({
-            //     data: accessorialsList.map((acc: Accessorial) => ({
-            //         type: acc.type,
-            //         amount: acc.amount,
-            //         notes: acc.notes,
-            //         rateAgreementId: rateAgreementId, // A chave estrangeira direta
-            //     })),
-            // });
             await Promise.all(
                 accessorialsList.map(async (acc: any) => {
+                    const accessorialData: any = {
+                        type: acc.type,
+                        amount: acc.amount,
+                        currency: acc.currency ?? "USD",
+                        vendor: acc.vendor ?? null,
+                        location: acc.location ?? null,
+                        expenseDate: acc.expenseDate ? new Date(acc.expenseDate) : null,
+                        notes: acc.notes ?? null,
+                        rateAgreementId,
+                        attachmentId: acc.attachmentId ?? undefined,
+                    };
+
                     return prisma.accessorial.create({
-                        data: {
-                            type: acc.type,
-                            amount: acc.amount,
-                            notes: acc.notes,
-                            rateAgreementId: rateAgreementId,
-                            // ✅ Agora conseguimos conectar os anexos que já existem
-                            attachment: {
-                                connect: acc.attachments.map((id: string) => ({ id }))
-                            }
-                        } as any
+                        data: accessorialData,
                     });
                 })
             );

@@ -19,7 +19,7 @@ export class LoadDocumentParser {
         text: string;
         documentType: string;
     }): Promise<LoadDraftResponse> {
-        const cleanedText = params.text.slice(0, 30000);
+        const cleanedText = params.text.slice(0, 8000);
 
         try {
             const response = await this.client.chat.completions.create({
@@ -29,121 +29,138 @@ export class LoadDocumentParser {
                     {
                         role: "system",
                         content: `
-You are a trucking document extraction engine for My Load Log.
+                            You are a trucking document extraction engine for My Load Log.
 
-Extract structured load data from OCR text.
+                            Extract structured load data from OCR text.
 
-Rules:
-- Return only valid JSON.
-- Do not include markdown.
-- Do not explain anything.
-- Do not invent data.
-- If a field is unclear, use null.
-- This is a draft for driver review, not a final load.
-- Dates should be ISO date strings when possible, like 2026-05-10.
-- Times should use 24-hour format when possible, like 08:00.
-- Convert money to number.
-- Convert weight to pounds when clearly stated.
-- Do not return pickupAddress, pickupZip, deliveryAddress, or deliveryZip.
-- For pickup and delivery, return only city and state in expectedPickupCity, expectedPickupState, expectedDeliveryCity, expectedDeliveryState.
-- Put commodity inside draft.commodityDesc.
-- Put rate, miles, payment, detention, layover, TONU, and financial notes inside draft.rateAgreement.
-- Put trailer type, temperature, weight, pallets, pieces, hazmat, high value, seal, and securement data inside draft.equipmentSpec.
-- Normalize trailerType to one of: DRY_VAN, REEFER, FLATBED, STEPDECK, POWER_ONLY, OTHER.
-- Normalize rateType to one of: FLAT, PER_MILE, OTHER.
-                        `.trim(),
+                            Rules:
+                            - Return only valid JSON.
+                            - Do not include markdown.
+                            - Do not explain anything.
+                            - Do not invent data.
+                            - If a field is unclear, use null.
+                            - This is a draft for driver review, not a final load.
+                            - Dates should be ISO date strings when possible, like 2026-05-10.
+                            - Times should use 24-hour format when possible, like 08:00.
+                            - Convert money to number.
+                            - Convert weight to pounds when clearly stated.
+                            - Do not return pickupAddress, pickupZip, deliveryAddress, or deliveryZip.
+                            - For pickup and delivery, return only city and state in expectedPickupCity, expectedPickupState, expectedDeliveryCity, expectedDeliveryState.
+                            - Put commodity inside draft.commodityDesc.
+                            - Put rate, miles, payment, detention, layover, TONU, and financial notes inside draft.rateAgreement.
+                            - Put trailer type, temperature, weight, pallets, pieces, hazmat, high value, seal, and securement data inside draft.equipmentSpec.
+                            - Normalize trailerType to one of: DRY_VAN, REEFER, FLATBED, STEPDECK, POWER_ONLY, OTHER.
+                            - Normalize rateType to one of: FLAT, PER_MILE, OTHER.
+                            - Only extract trucking load data.
+                            - If the document is a bank receipt, Pix receipt, payment receipt, invoice unrelated to freight, personal document, or any non-load document, return all draft fields as null.
+                            - Never treat a generic payment receipt amount as rateAgreement.rateAmount unless the document clearly identifies it as a freight/load rate.
+                            - Do not infer load data from non-trucking documents.
+                            - First identify the actual document type from OCR text.
+                            - If the text contains "MASTER BILL OF LADING", "BILL OF LADING", "B/L", or "BOL", treat it as BOL even if the requested documentType is different.
+                            - For BOL documents, do not require brokerCompanyName or rateAgreement.rateAmount.
+                            - For BOL documents, map "Master Bill No" or "Bill of Lading No" to bolNumber.
+                            - Do not map SCAC to carrierMcNumber. SCAC is not an MC number.
+                            - Do not map "50-Truck, Large" or "Ship Condition" to trailerNumber.
+                            - If "Equipment" appears as a numeric identifier, it may be used as trailerNumber only with medium confidence.
+                            - Map carrier name from "Carrier Name" to carrierCompanyName.
+                            - Map "Ship From" to expectedPickupCity and expectedPickupState.
+                            - Map "Ship To" or delivery destination to expectedDeliveryCity and expectedDeliveryState.
+                            - For BOL documents, extract piece count, pallet count, and weight when present.
+                            `.trim(),
                     },
                     {
                         role: "user",
                         content: `
-Document type: ${params.documentType}
+                            Document type: ${params.documentType}
 
-Return the extracted load draft as JSON with exactly this shape:
+                            Return the extracted load draft as JSON with exactly this shape:
 
-{
-  "status": "needs_review",
-  "confidence": 0.8,
-  "draft": {
-    "loadNumber": null,
-    "proNumber": null,
-    "bolNumber": null,
-    "bookingRefNumber": null,
-    "trailerNumber": null,
-    "containerNumber": null,
-    "sealNumber": null,
-    "commodityDesc": null,
-    "pickupNumber": null,
-    "poNumber": null,
+                            {
+                            "status": "needs_review",
+                            "confidence": 0.8,
+                            "draft": {
+                                "loadNumber": null,
+                                "proNumber": null,
+                                "bolNumber": null,
+                                "bookingRefNumber": null,
+                                "trailerNumber": null,
+                                "containerNumber": null,
+                                "sealNumber": null,
+                                "commodityDesc": null,
+                                "pickupNumber": null,
+                                "poNumber": null,
 
-    "expectedPickupCity": null,
-    "expectedPickupState": null,
-    "expectedDeliveryCity": null,
-    "expectedDeliveryState": null,
+                                "expectedPickupCity": null,
+                                "expectedPickupState": null,
+                                "expectedDeliveryCity": null,
+                                "expectedDeliveryState": null,
 
-    "brokerCompanyName": null,
-    "brokerMcNumber": null,
-    "brokerPhone": null,
-    "brokerEmail": null,
-    "brokerAgentName": null,
-    "brokerAgentPhone": null,
-    "brokerAgentEmail": null,
+                                "brokerCompanyName": null,
+                                "brokerMcNumber": null,
+                                "brokerPhone": null,
+                                "brokerEmail": null,
+                                "brokerAgentName": null,
+                                "brokerAgentPhone": null,
+                                "brokerAgentEmail": null,
 
-    "dispatcherName": null,
-    "dispatcherCompanyName": null,
-    "dispatcherPhone": null,
-    "dispatcherEmail": null,
+                                "dispatcherName": null,
+                                "dispatcherCompanyName": null,
+                                "dispatcherPhone": null,
+                                "dispatcherEmail": null,
 
-    "carrierCompanyName": null,
-    "carrierMcNumber": null,
-    "carrierDotNumber": null,
-    "carrierMainPhone": null,
+                                "carrierCompanyName": null,
+                                "carrierMcNumber": null,
+                                "carrierDotNumber": null,
+                                "carrierMainPhone": null,
 
-    "rateAgreement": {
-      "rateAmount": null,
-      "rateType": null,
-      "quotedMiles": null,
-      "paymentMethod": null,
-      "quickPayFee": null,
-      "detentionStartsAfterHours": null,
-      "detentionRatePerHour": null,
-      "detentionMaxCap": null,
-      "layoverTermsText": null,
-      "tonuTermsText": null,
-      "notes": null
-    },
+                                "rateAgreement": {
+                                "rateAmount": null,
+                                "rateType": null,
+                                "quotedMiles": null,
+                                "paymentMethod": null,
+                                "quickPayFee": null,
+                                "detentionStartsAfterHours": null,
+                                "detentionRatePerHour": null,
+                                "detentionMaxCap": null,
+                                "layoverTermsText": null,
+                                "tonuTermsText": null,
+                                "notes": null
+                                },
 
-    "equipmentSpec": {
-      "trailerType": null,
-      "temperatureSetpointF": null,
-      "temperatureMinF": null,
-      "temperatureMaxF": null,
-      "weightLbs": null,
-      "palletCount": null,
-      "pieceCount": null,
-      "hazmat": null,
-      "highValue": null,
-      "sealRequired": null,
-      "securementRequired": null,
-      "securementMethods": []
-    }
-  },
-  "fieldConfidence": {},
-  "missingFields": [],
-  "warnings": []
-}
+                                "equipmentSpec": {
+                                "trailerType": null,
+                                "temperatureSetpointF": null,
+                                "temperatureMinF": null,
+                                "temperatureMaxF": null,
+                                "weightLbs": null,
+                                "palletCount": null,
+                                "pieceCount": null,
+                                "hazmat": null,
+                                "highValue": null,
+                                "sealRequired": null,
+                                "securementRequired": null,
+                                "securementMethods": []
+                                }
+                            },
+                            "fieldConfidence": {},
+                            "missingFields": [],
+                            "warnings": []
+                            }
 
-Allowed fieldConfidence values:
-"high", "medium", "low", "missing"
+                            Allowed fieldConfidence values:
+                            "high", "medium", "low", "missing"
 
-Use dot notation for nested confidence keys, for example:
-"rateAgreement.rateAmount": "high"
-"equipmentSpec.trailerType": "medium"
+                            Use dot notation for nested confidence keys, for example:
+                            "rateAgreement.rateAmount": "high"
+                            "equipmentSpec.trailerType": "medium"
 
-OCR text:
-${cleanedText}
-                        `.trim(),
+                            OCR text:
+                            ${cleanedText}
+                            `.trim(),
                     },
                 ],
+            }, {
+                timeout: 45_000,
             });
 
             const outputText = response.choices[0]?.message?.content;
@@ -155,7 +172,7 @@ ${cleanedText}
             const cleanedJson = this.extractJson(outputText);
             const parsed = JSON.parse(cleanedJson);
 
-            return this.normalizeParsedDraft(parsed);
+            return this.normalizeParsedDraft(parsed, params.documentType);
         } catch (err: any) {
             if (err instanceof AppError) {
                 throw err;
@@ -177,10 +194,19 @@ ${cleanedText}
                 throw new AppError(502, "AI parser returned invalid JSON");
             }
 
+            if (
+                err?.code === "ETIMEDOUT" ||
+                err?.name === "TimeoutError" ||
+                err?.message?.toLowerCase().includes("timeout")
+            ) {
+                throw new AppError(504, "AI parser timed out");
+            }
+
             throw new AppError(
                 503,
                 `AI parser request failed: ${err?.message || "Unknown error"}`
             );
+
         }
     }
 
@@ -205,7 +231,7 @@ ${cleanedText}
         return trimmed.slice(firstBrace, lastBrace + 1);
     }
 
-    private normalizeParsedDraft(parsed: any): LoadDraftResponse {
+    private normalizeParsedDraft(parsed: any, documentType: string): LoadDraftResponse {
         const sourceDraft = parsed?.draft ?? {};
 
         const draft: LoadDraftResponse["draft"] = {
@@ -302,7 +328,7 @@ ${cleanedText}
         };
 
         const fieldConfidence = this.buildFieldConfidence(parsed?.fieldConfidence, draft);
-        const missingFields = this.buildMissingFields(parsed?.missingFields, draft);
+        const missingFields = this.buildMissingFields(parsed?.missingFields, draft, documentType);
         const warnings = Array.isArray(parsed?.warnings)
             ? parsed.warnings.filter((item: unknown) => typeof item === "string")
             : [];
@@ -347,33 +373,51 @@ ${cleanedText}
     }
 
     private buildMissingFields(
-        rawMissingFields: any,
-        draft: LoadDraftResponse["draft"]
+        _rawMissingFields: any,
+        draft: LoadDraftResponse["draft"],
+        documentType: string
     ) {
         const missing = new Set<string>();
 
-        if (Array.isArray(rawMissingFields)) {
-            for (const item of rawMissingFields) {
-                if (typeof item === "string" && item.trim()) {
-                    missing.add(item.trim());
-                }
-            }
-        }
-
-        const importantFields: Array<[string, unknown]> = [
-            ["loadNumber", draft.loadNumber],
-            ["brokerCompanyName", draft.brokerCompanyName],
-            ["commodityDesc", draft.commodityDesc],
+        const commonLocationFields: Array<[string, unknown]> = [
             ["expectedPickupCity", draft.expectedPickupCity],
             ["expectedPickupState", draft.expectedPickupState],
             ["expectedDeliveryCity", draft.expectedDeliveryCity],
             ["expectedDeliveryState", draft.expectedDeliveryState],
-            ["rateAgreement.rateAmount", draft.rateAgreement.rateAmount],
-            ["equipmentSpec.trailerType", draft.equipmentSpec.trailerType],
-            ["equipmentSpec.weightLbs", draft.equipmentSpec.weightLbs],
         ];
 
-        for (const [path, value] of importantFields) {
+        const rateConfirmationFields: Array<[string, unknown]> = [
+            ["loadNumber", draft.loadNumber],
+            ["brokerCompanyName", draft.brokerCompanyName],
+            ["rateAgreement.rateAmount", draft.rateAgreement.rateAmount],
+            ["equipmentSpec.trailerType", draft.equipmentSpec.trailerType],
+        ];
+
+        const bolFields: Array<[string, unknown]> = [
+            ["bolNumber", draft.bolNumber],
+            ["carrierCompanyName", draft.carrierCompanyName],
+            ["poNumber", draft.poNumber],
+            ["sealNumber", draft.sealNumber],
+            ["equipmentSpec.weightLbs", draft.equipmentSpec.weightLbs],
+            ["equipmentSpec.palletCount", draft.equipmentSpec.palletCount],
+            ["equipmentSpec.pieceCount", draft.equipmentSpec.pieceCount],
+        ];
+
+        const dispatchFields: Array<[string, unknown]> = [
+            ["loadNumber", draft.loadNumber],
+            ["carrierCompanyName", draft.carrierCompanyName],
+            ["expectedPickupCity", draft.expectedPickupCity],
+            ["expectedDeliveryCity", draft.expectedDeliveryCity],
+        ];
+
+        const fields =
+            documentType === "BOL"
+                ? [...commonLocationFields, ...bolFields]
+                : documentType === "DISPATCH_SHEET"
+                    ? dispatchFields
+                    : [...commonLocationFields, ...rateConfirmationFields];
+
+        for (const [path, value] of fields) {
             if (this.isMissing(value)) {
                 missing.add(path);
             }

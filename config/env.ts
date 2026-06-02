@@ -12,6 +12,13 @@ const EnvSchema = z.object({
 
     GOOGLE_CLIENT_ID: z.string().min(1),
 
+    PADDLE_OCR_PYTHON_BIN: z.string().default("python"),
+    PADDLE_OCR_SCRIPT_PATH: z.string().default("./scripts/paddle_ocr.py"),
+
+    OCR_PROVIDER: z.enum(["remote", "paddle"]).default("remote"),
+    OCR_SERVICE_URL: z.string().url().optional(),
+    OCR_SERVICE_API_KEY: z.string().optional(),
+
     AI_PROVIDER: z
         .enum(["openai_compatible", "ollama", "openai"])
         .default("openai_compatible"),
@@ -20,7 +27,7 @@ const EnvSchema = z.object({
     AI_API_KEY: z.string().min(1),
     AI_MODEL: z.string().default("qwen2.5-coder:14b"),
 
-    OLLAMA_BASE_URL: z.string().optional(),
+    OLLAMA_BASE_URL: z.string().url().optional(),
     OLLAMA_MODEL: z.string().optional(),
 
     OPENAI_API_KEY: z.string().optional(),

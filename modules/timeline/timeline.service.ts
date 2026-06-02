@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/error.js";
 import { TimelineRepository } from "./timeline.repository.js";
 import { stableStringify, sha256Hex } from "../../utils/hash.js";
-import { Prisma, TimelineEventType } from "@prisma/client";
+import { Prisma, TimelineEventSource, TimelineEventType } from "@prisma/client";
 import { assertLoadIsNotCompleted } from "../../service/assertLoadIsNotCompleted.js";
 import { StopAutomationService } from "../stops/stop-automation.service.js";
 
@@ -53,49 +53,94 @@ export class TimelineService {
         }
     };
 
+    private buildTimelineMetadata(input: any) {
+        const metadata =
+            input.metadata &&
+                typeof input.metadata === "object" &&
+                !Array.isArray(input.metadata)
+                ? { ...input.metadata }
+                : {};
+
+        if (input.type === TimelineEventType.DOOR_ASSIGNED) {
+            metadata.dockDoorNumber = String(input.dockDoorNumber).trim();
+        }
+
+        return Object.keys(metadata).length > 0 ? metadata : undefined;
+    }
+
     async createEvent(userId: string, loadId: string, input: any) {
         await this.assertLoadOwned(userId, loadId);
 
         await this.assertEventOccuredAtUnique(loadId, input.type);
 
-        await assertLoadIsNotCompleted(loadId, this.repo, "Não é permitido adicionar eventos a uma carga já finalizada");
+        await assertLoadIsNotCompleted(
+            loadId,
+            this.repo,
+            "Não é permitido adicionar eventos a uma carga já finalizada"
+        );
 
         return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            if (
+                input.type === TimelineEventType.DOOR_ASSIGNED &&
+                (!input.dockDoorNumber || !String(input.dockDoorNumber).trim())
+            ) {
+                throw new AppError(
+                    400,
+                    "dockDoorNumber is required when type is DOOR_ASSIGNED"
+                );
+            }
 
-            if (input.type === "ARRIVED_AT_SHIPPER") {
+            if (input.type === TimelineEventType.ARRIVED_AT_SHIPPER) {
                 await tx.load.update({
-                    where: { id: loadId },
+                    where: {
+                        id: loadId,
+                    },
                     data: {
-                        status: "ACTIVE"
-                    }
-                })
+                        status: "ACTIVE",
+                    },
+                });
             }
 
             const last = await tx.timelineEvent.findFirst({
-                where: { loadId },
-                orderBy: [{ sequence: "desc" }],
-                select: { sequence: true, hash: true },
+                where: {
+                    loadId,
+                },
+                orderBy: [
+                    {
+                        sequence: "desc",
+                    },
+                ],
+                select: {
+                    sequence: true,
+                    hash: true,
+                },
             });
 
             const sequence = (last?.sequence ?? 0) + 1;
             const prevHash = last?.hash ?? null;
 
-            const occurredAtUtc: Date = input.occurredAtUtc ?? new Date();
+            const occurredAtUtc: Date = input.occurredAtUtc
+                ? new Date(input.occurredAtUtc)
+                : new Date();
 
-            // hash imutável do evento (criação)
+            const source = input.source ?? TimelineEventSource.MANUAL;
+            const timeZone = input.timeZone ?? "UTC";
+
+            const metadata = this.buildTimelineMetadata(input);
+
             const hashPayload = {
                 loadId,
                 sequence,
                 prevHash,
                 type: input.type,
-                source: input.source,
+                source,
                 occurredAtUtc: occurredAtUtc.toISOString(),
-                timeZone: input.timeZone ?? "UTC",
+                timeZone,
                 latitude: input.latitude ?? null,
                 longitude: input.longitude ?? null,
                 locationText: input.locationText ?? null,
                 notes: input.notes ?? null,
-                metadata: input.metadata ?? null,
+                metadata: metadata ?? null,
             };
 
             const hash = sha256Hex(stableStringify(hashPayload));
@@ -104,17 +149,23 @@ export class TimelineService {
                 data: {
                     loadId,
                     type: input.type,
-                    source: input.source,
+                    source,
                     occurredAtUtc,
-                    timeZone: input.timeZone ?? "UTC",
+                    timeZone,
 
-                    // Decimal: Prisma aceita string/Decimal. string é ok.
-                    latitude: input.latitude != null ? String(input.latitude) : undefined,
-                    longitude: input.longitude != null ? String(input.longitude) : undefined,
+                    latitude:
+                        input.latitude !== undefined && input.latitude !== null
+                            ? String(input.latitude)
+                            : undefined,
 
-                    locationText: input.locationText,
-                    notes: input.notes,
-                    metadata: input.metadata,
+                    longitude:
+                        input.longitude !== undefined && input.longitude !== null
+                            ? String(input.longitude)
+                            : undefined,
+
+                    locationText: input.locationText ?? null,
+                    notes: input.notes ?? null,
+                    metadata: metadata ?? undefined,
 
                     sequence,
                     prevHash,
@@ -123,19 +174,23 @@ export class TimelineService {
                 },
             });
 
-            if (!ev) throw new AppError(500, "Falha ao criar evento de timeline");
+            if (!ev) {
+                throw new AppError(500, "Falha ao criar evento de timeline");
+            }
 
             await stopAutomationService.handleTimelineEventWithTx(tx, {
                 id: ev.id,
                 loadId: ev.loadId,
                 type: ev.type,
-                occurredAt: ev.createdAt,
+                occurredAtUtc: ev.occurredAtUtc,
                 notes: ev.notes,
+                metadata: ev.metadata,
+                locationText: ev.locationText,
             });
 
             return ev;
         });
-    };
+    }
 
     async updateEvent(userId: string, eventId: string, input: any) {
         const ev = await prisma.timelineEvent.findUnique({

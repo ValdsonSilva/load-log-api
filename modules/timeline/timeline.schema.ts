@@ -1,36 +1,46 @@
 import { z } from "zod";
+import { TimelineEventSource, TimelineEventType } from "@prisma/client";
 
-export const CreateTimelineEventSchema = z.object({
-    type: z.enum([
-        "ARRIVED_AT_SHIPPER", 
-        "CHECKED_IN",
-        "DOOR_ASSIGNED",
-        "LOAD_START",
-        "LOAD_END",
-        "LEFT_SHIPPER",
-        "SCALE_STOP",
-        "ARRIVED_AT_RECEIVER",
-        "UNLOAD_START",
-        "UNLOAD_END",
-        "LEFT_RECEIVER",
-        "LOAD_COMPLETED",
-        "DELAY_TRAFFIC",
-        "DELAY_WEATHER",
-        "DELAY_ACCIDENT",
-        "NOTE",
-        "OTHER",
-    ]),
-    source: z.enum(["MANUAL", "AUTO_GPS", "IMPORTED"]).default("MANUAL"),
+export const createTimelineEventSchema = z.object({
+    params: z.object({
+        loadId: z.string().min(1),
+    }),
 
-    occurredAtUtc: z.coerce.date().optional(), // default: now, format: ISO string or timestamp
-    timeZone: z.string().min(1).default("UTC"),
+    body: z.object({
+        type: z.enum(TimelineEventType),
 
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
-    locationText: z.string().optional(),
+        source: z.enum(TimelineEventSource).optional(),
 
-    notes: z.string().optional(),
-    metadata: z.unknown().optional(),
+        occurredAtUtc: z.coerce.date().optional(),
+        timeZone: z.string().trim().min(1).optional(),
+
+        latitude: z.coerce.number().optional().nullable(),
+        longitude: z.coerce.number().optional().nullable(),
+        locationText: z.string().trim().optional().nullable(),
+
+        notes: z.string().trim().optional().nullable(),
+
+        metadata: z
+            .record(z.string(), z.any())
+            .optional()
+            .nullable(),
+
+        dockDoorNumber: z
+            .string()
+            .trim()
+            .min(1)
+            .max(50)
+            .optional(),
+    }).superRefine((body, ctx) => {
+        if (
+            body.type === TimelineEventType.DOOR_ASSIGNED &&
+            !body.dockDoorNumber
+        ) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["dockDoorNumber"],
+                message: "dockDoorNumber is required when type is DOOR_ASSIGNED",
+            });
+        }
+    }),
 });
-
-export const UpdateTimelineEventSchema = CreateTimelineEventSchema.partial();
