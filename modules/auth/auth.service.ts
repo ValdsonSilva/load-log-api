@@ -18,9 +18,17 @@ export class AuthService {
                     email: input.email,
                     name: input.name,
                     phone: input.phone,
-                    passwordHash: hash
+                    passwordHash: hash,
+                    role: "DRIVER",
                 },
-                select: { id: true, email: true, name: true, phone: true, role: true },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    phone: true,
+                    role: true,
+                    isActive: true,
+                },
             });
 
             console.log("usuário criado: ", user);
@@ -40,15 +48,50 @@ export class AuthService {
     }
 
     async login(input: { email: string; password: string }) {
-        const user = await prisma.user.findUnique({ where: { email: input.email } });
-        if (!user) throw new AppError(401, "Invalid credentials - (email)");
+        const user = await prisma.user.findUnique({
+            where: { email: input.email },
+        });
 
-        const ok = await bcrypt.compare(input.password, user.passwordHash!);
-        if (!ok) throw new AppError(401, "Invalid credentials - (password)");
+        if (!user) {
+            throw new AppError(401, "Invalid credentials - (email)");
+        }
 
-        const token = jwt.sign({ userId: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: "7d" });
+        if (!user.isActive) {
+            throw new AppError(403, "Account is disabled");
+        }
+
+        if (!user.passwordHash) {
+            throw new AppError(401, "Invalid credentials - password login unavailable");
+        }
+
+        const ok = await bcrypt.compare(input.password, user.passwordHash);
+
+        if (!ok) {
+            throw new AppError(401, "Invalid credentials - (password)");
+        }
+
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                role: user.role,
+            },
+            env.JWT_SECRET,
+            {
+                expiresIn: "7d",
+            }
+        );
+
         return {
-            user: { id: user.id, email: user.email, name: user.name, phone: user.phone, defaultTimeZone: user.defaultTimeZone, avatarUrl: user.avatarUrl, role: user.role },
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                phone: user.phone,
+                defaultTimeZone: user.defaultTimeZone,
+                avatarUrl: user.avatarUrl,
+                role: user.role,
+                isActive: user.isActive,
+            },
             token,
         };
     }

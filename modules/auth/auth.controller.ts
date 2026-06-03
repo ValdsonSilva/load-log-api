@@ -98,3 +98,33 @@ export const deactivateAccount: RequestHandler = async (req, res) => {
         return res.status(500).json({ message: "Erro interno ao desativar a conta." });
     }
 };
+
+export const me: RequestHandler = async (req, res) => {
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            defaultTimeZone: true,
+            avatarUrl: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+
+    if (!user || !user.isActive) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    return res.json({ user });
+};

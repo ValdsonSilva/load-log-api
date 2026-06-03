@@ -1,17 +1,57 @@
-export function requireAdmin(req: any, res: any, next: any) {
-    const user = req.user;
+import type { RequestHandler } from "express";
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/error.js";
 
-    if (!user) {
-        return res.status(401).json({
-            message: "Unauthorized",
-        });
+export const requireAdmin: RequestHandler = async (req, _res, next) => {
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            role: true,
+            isActive: true,
+        },
+    });
+
+    if (!user || !user.isActive) {
+        throw new AppError(401, "Unauthorized");
     }
 
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-        return res.status(403).json({
-            message: "Forbidden: admin access required",
-        });
+        throw new AppError(403, "Forbidden: admin access required");
     }
 
-    return next();
-}
+    next();
+};
+
+export const requireSuperAdmin: RequestHandler = async (req, _res, next) => {
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            role: true,
+            isActive: true,
+        },
+    });
+
+    if (!user || !user.isActive) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    if (user.role !== "SUPER_ADMIN") {
+        throw new AppError(403, "Forbidden: super admin access required");
+    }
+
+    next();
+};

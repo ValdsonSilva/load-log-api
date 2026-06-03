@@ -229,16 +229,16 @@ enum UserRole {
 //
 
 model User {
-  id              String  @id @default(uuid())
-  email           String  @unique
+  id              String   @id @default(uuid())
+  email           String   @unique
   passwordHash    String?
   name            String?
   phone           String?
   defaultTimeZone String? // IANA tz, ex: "America/Chicago"
-  googleId        String? @unique
+  googleId        String?  @unique
   avatarUrl       String?
-  isActive        Boolean @default(true) // Adicione este campo
-  role UserRole @default(DRIVER)
+  isActive        Boolean  @default(true) // Adicione este campo
+  role            UserRole @default(DRIVER)
 
   loads Load[]
 
@@ -253,6 +253,7 @@ model User {
   invitationCodes          InvitationCode[]
   invitationRedemptions    InvitationRedemption[]
   loadBaseDetailsRevisions LoadBaseDetailsRevision[]
+  auditLogs                AuditLog[]                @relation("AuditLogActor")
 }
 
 model LoadBaseDetailsRevision {
@@ -752,4 +753,26 @@ model InvitationRedemption {
   redeemedAt DateTime @default(now())
 
   @@unique([codeId, userId])
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  actorId String?
+  actor   User?   @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  action     String
+  targetType String
+  targetId   String?
+
+  before   Json?
+  after    Json?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }

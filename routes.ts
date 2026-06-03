@@ -11,6 +11,7 @@ import { stopsRoutes } from "./modules/stops/stops.routes.js";
 import { accessorialsRoutes } from "./modules/acessorials/accessorials.routes.js";
 import { ocrRoutes } from "./modules/ocr/ocr.routes.js";
 import { expensesRoutes } from "./modules/expenses/expenses.routes.js";
+import { adminRoutes } from "./modules/admin/admin.routes.js";
 
 export const routes = Router();
 
@@ -18,6 +19,7 @@ routes.use("/auth", authRoutes);
 routes.use("/loads", loadsRoutes);
 routes.use("/ocr", ocrRoutes);
 routes.use("/expenses", expensesRoutes);
+routes.use("/admin", adminRoutes);
 routes.use("/", [
     disputesRoutes,
     invitationsRoutes,

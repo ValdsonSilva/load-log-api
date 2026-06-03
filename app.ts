@@ -9,7 +9,7 @@ import PinoHttp from "pino-http";
 function buildApp() {
   const app = express();
 
-  const allowedOrigins = ["https://www.thunderclient.com"];
+  const allowedOrigins = ["https://www.thunderclient.com", "http://localhost:5173"];
   const corsOptions: cors.CorsOptions = {
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
