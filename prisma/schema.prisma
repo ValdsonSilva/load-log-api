@@ -218,10 +218,46 @@ enum StopStatus {
   CANCELLED
 }
 
+// controle de permissões
 enum UserRole {
   DRIVER
   ADMIN
   SUPER_ADMIN
+}
+
+// controle de tipo de usuário (para segmentação e regras de negócio)
+enum UserType {
+  COMPANY_DRIVER
+  INDEPENDENT_COMPANY_DRIVER
+  OWNER_OPERATOR
+  INDEPENDENT_DISPATCHER
+  COMPANY_DISPATCHER
+  CARRIER_ADMIN
+}
+
+enum DispatcherDriverConnectionStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  REVOKED
+  CANCELLED
+  BLOCKED
+}
+
+enum LoadOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum FieldSourceActorType {
+  DRIVER
+  DISPATCHER
+  ADMIN
+  OCR
+  SYSTEM
 }
 
 //
@@ -254,6 +290,25 @@ model User {
   invitationRedemptions    InvitationRedemption[]
   loadBaseDetailsRevisions LoadBaseDetailsRevision[]
   auditLogs                AuditLog[]                @relation("AuditLogActor")
+
+  userType UserType?
+
+  driverCode     String? @unique
+  dispatcherCode String? @unique
+
+  dispatcherProfile DispatcherProfile?
+
+  dispatcherConnections DispatcherDriverConnection[] @relation("DispatcherConnections")
+  driverConnections     DispatcherDriverConnection[] @relation("DriverConnections")
+
+  dispatcherInvitesSent DispatcherDriverConnection[] @relation("DispatcherInvitesSent")
+
+  dispatcherLoadOffers LoadOffer[] @relation("DispatcherLoadOffers")
+  driverLoadOffers     LoadOffer[] @relation("DriverLoadOffers")
+
+  dispatchedLoads Load[] @relation("DispatchedLoads")
+
+  loadFieldSources LoadFieldSource[]
 }
 
 model LoadBaseDetailsRevision {
@@ -371,6 +426,11 @@ model Load {
   disputes                 Dispute[]
   locationPoints           LocationPoint[]
   loadBaseDetailsRevisions LoadBaseDetailsRevision[]
+  dispatcherId             String?
+  dispatcher               User?                     @relation("DispatchedLoads", fields: [dispatcherId], references: [id], onDelete: SetNull)
+
+  acceptedLoadOffer LoadOffer?        @relation("LoadOfferAcceptedLoad")
+  fieldSources      LoadFieldSource[]
 
   @@unique([driverId, loadNumber])
   @@index([loadNumber])
@@ -775,4 +835,122 @@ model AuditLog {
   @@index([action])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+model DispatcherProfile {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String?
+  displayName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DispatcherDriverConnection {
+  id String @id @default(uuid())
+
+  dispatcherId String
+  dispatcher   User   @relation("DispatcherConnections", fields: [dispatcherId], references: [id], onDelete: Cascade)
+
+  driverId String
+  driver   User   @relation("DriverConnections", fields: [driverId], references: [id], onDelete: Cascade)
+
+  invitedById String
+  invitedBy   User   @relation("DispatcherInvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  status DispatcherDriverConnectionStatus @default(PENDING)
+
+  acceptedAt  DateTime?
+  rejectedAt  DateTime?
+  revokedAt   DateTime?
+  cancelledAt DateTime?
+  blockedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dispatcherId, driverId])
+  @@index([dispatcherId])
+  @@index([driverId])
+  @@index([status])
+}
+
+model LoadOffer {
+  id String @id @default(uuid())
+
+  dispatcherId String
+  dispatcher   User   @relation("DispatcherLoadOffers", fields: [dispatcherId], references: [id], onDelete: Cascade)
+
+  driverId String
+  driver   User   @relation("DriverLoadOffers", fields: [driverId], references: [id], onDelete: Cascade)
+
+  loadId String? @unique
+  load   Load?   @relation("LoadOfferAcceptedLoad", fields: [loadId], references: [id], onDelete: SetNull)
+
+  status LoadOfferStatus @default(PENDING)
+
+  pickupFacilityName String?
+  pickupStreet1      String?
+  pickupCity         String?
+  pickupState        String?
+  pickupPostalCode   String?
+  pickupCountry      String? @default("US")
+
+  deliveryFacilityName String?
+  deliveryStreet1      String?
+  deliveryCity         String?
+  deliveryState        String?
+  deliveryPostalCode   String?
+  deliveryCountry      String? @default("US")
+
+  rateAmount     Decimal?
+  estimatedMiles Float?
+
+  scheduledPickupAt   DateTime?
+  scheduledDeliveryAt DateTime?
+
+  brokerName   String?
+  customerName String?
+  notes        String?
+
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  cancelledAt     DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dispatcherId])
+  @@index([driverId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model LoadFieldSource {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  fieldName String
+
+  sourceActorType FieldSourceActorType
+
+  sourceUserId String?
+  sourceUser   User?   @relation(fields: [sourceUserId], references: [id], onDelete: SetNull)
+
+  sourceContext String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([loadId, fieldName])
+  @@index([loadId])
+  @@index([sourceActorType])
+  @@index([sourceUserId])
 }

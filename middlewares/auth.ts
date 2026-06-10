@@ -26,3 +26,4 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
     throw new AppError(401, "Invalid token");
   }
 };
+

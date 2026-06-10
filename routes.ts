@@ -12,6 +12,8 @@ import { accessorialsRoutes } from "./modules/acessorials/accessorials.routes.js
 import { ocrRoutes } from "./modules/ocr/ocr.routes.js";
 import { expensesRoutes } from "./modules/expenses/expenses.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
+import { dispatcherRoutes } from "./modules/dispatcher/dispatcher.routes.js";
+import { loadOffersRoutes } from "./modules/load-offers/load-offers.routes.js";
 
 export const routes = Router();
 
@@ -20,6 +22,13 @@ routes.use("/loads", loadsRoutes);
 routes.use("/ocr", ocrRoutes);
 routes.use("/expenses", expensesRoutes);
 routes.use("/admin", adminRoutes);
+routes.use("/auth", authRoutes);
+routes.use("/loads", loadsRoutes);
+routes.use("/ocr", ocrRoutes);
+routes.use("/expenses", expensesRoutes);
+routes.use("/admin", adminRoutes);
+routes.use("/dispatcher", dispatcherRoutes);
+routes.use("/load-offers", loadOffersRoutes);
 routes.use("/", [
     disputesRoutes,
     invitationsRoutes,
