@@ -10,6 +10,12 @@ import {
     listDriverOffers,
     rejectDriverOffer,
 } from "./load-offers.controller.js";
+import {
+    deleteDispatcherDocument,
+    listDispatcherDocuments,
+    listDriverDocuments,
+    uploadDispatcherDocument,
+} from "./load-offer-documents.controller.js";
 
 export const loadOffersRoutes = Router();
 
@@ -24,3 +30,9 @@ loadOffersRoutes.get("/driver", listDriverOffers);
 loadOffersRoutes.get("/driver/:id", getDriverOffer);
 loadOffersRoutes.post("/driver/:id/accept", acceptDriverOffer);
 loadOffersRoutes.post("/driver/:id/reject", rejectDriverOffer);
+
+// Document routes
+loadOffersRoutes.post("/dispatcher/:id/documents", uploadDispatcherDocument);
+loadOffersRoutes.get("/dispatcher/:id/documents", listDispatcherDocuments);
+loadOffersRoutes.delete("/dispatcher/:id/documents/:documentId", deleteDispatcherDocument);
+loadOffersRoutes.get("/driver/:id/documents", listDriverDocuments);

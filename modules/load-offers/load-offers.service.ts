@@ -4,6 +4,7 @@ import {
     LoadOfferStatus,
     UserType,
 } from "@prisma/client";
+import { LoadOfferDocumentsService } from "./load-offer-documents.service.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/error.js";
 
@@ -34,6 +35,8 @@ function parseDate(value: unknown) {
 
     return date;
 }
+
+const loadOfferDocumentsService = new LoadOfferDocumentsService();
 
 export class LoadOffersService {
     private async ensureDispatcher(dispatcherId: string) {
@@ -159,6 +162,11 @@ export class LoadOffersService {
                         status: true,
                     },
                 },
+                documents: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                },
             },
         });
 
@@ -196,6 +204,11 @@ export class LoadOffersService {
                             include: {
                                 accessorials: true,
                             },
+                        },
+                        documents: {
+                            orderBy: {
+                                createdAt: "desc",
+                            }
                         },
                     },
                 },
@@ -254,6 +267,11 @@ export class LoadOffersService {
                         dispatcherProfile: true,
                     },
                 },
+                documents: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                },
             },
         });
 
@@ -283,6 +301,11 @@ export class LoadOffersService {
                         id: true,
                         loadNumber: true,
                         status: true,
+                    },
+                },
+                documents: {
+                    orderBy: {
+                        createdAt: "desc",
                     },
                 },
             },
@@ -447,9 +470,19 @@ export class LoadOffersService {
                 skipDuplicates: true,
             });
 
+            const copiedDocuments = await loadOfferDocumentsService.copyOfferDocumentsToLoad(
+                tx,
+                {
+                    loadOfferId: offer.id,
+                    loadId: load.id,
+                    driverId,
+                }
+            );
+
             return {
                 offer: updatedOffer,
                 load,
+                copiedDocuments,
             };
         });
 

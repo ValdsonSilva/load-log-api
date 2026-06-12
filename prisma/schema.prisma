@@ -260,6 +260,24 @@ enum FieldSourceActorType {
   SYSTEM
 }
 
+enum LoadOfferDocumentType {
+  RATE_CONFIRMATION
+  INSTRUCTIONS
+  CUSTOMER_DOCUMENT
+  OTHER
+}
+
+enum LoadCommentVisibility {
+  DRIVER_DISPATCHER
+  INTERNAL_DISPATCHER
+  ADMIN_ONLY
+}
+
+enum LoadCustomFieldStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 //
 // MODELS
 //
@@ -308,7 +326,11 @@ model User {
 
   dispatchedLoads Load[] @relation("DispatchedLoads")
 
-  loadFieldSources LoadFieldSource[]
+  loadFieldSources   LoadFieldSource[]
+  loadOfferDocuments LoadOfferDocument[]
+  loadFieldRevisions LoadFieldRevision[]
+  loadCustomFields   LoadCustomField[]
+  loadComments       LoadComment[]
 }
 
 model LoadBaseDetailsRevision {
@@ -429,8 +451,11 @@ model Load {
   dispatcherId             String?
   dispatcher               User?                     @relation("DispatchedLoads", fields: [dispatcherId], references: [id], onDelete: SetNull)
 
-  acceptedLoadOffer LoadOffer?        @relation("LoadOfferAcceptedLoad")
+  acceptedLoadOffer LoadOffer?          @relation("LoadOfferAcceptedLoad")
   fieldSources      LoadFieldSource[]
+  fieldRevisions    LoadFieldRevision[]
+  customFields      LoadCustomField[]
+  comments          LoadComment[]
 
   @@unique([driverId, loadNumber])
   @@index([loadNumber])
@@ -724,9 +749,10 @@ model Attachment {
   uploadedById   String?
   uploadedBy     User?   @relation(fields: [uploadedById], references: [id])
 
-  createdAt        DateTime          @default(now())
-  disputeEvidences DisputeEvidence[]
-  accessorials     Accessorial[]
+  createdAt          DateTime            @default(now())
+  disputeEvidences   DisputeEvidence[]
+  accessorials       Accessorial[]
+  loadOfferDocuments LoadOfferDocument[]
 
   @@index([loadId, type])
   @@index([timelineEventId])
@@ -922,8 +948,9 @@ model LoadOffer {
   cancelledAt     DateTime?
   rejectionReason String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  loadOfferDocuments LoadOfferDocument[]
 
   @@index([dispatcherId])
   @@index([driverId])
@@ -953,4 +980,115 @@ model LoadFieldSource {
   @@index([loadId])
   @@index([sourceActorType])
   @@index([sourceUserId])
+}
+
+model LoadOfferDocument {
+  id String @id @default(uuid())
+
+  loadOfferId String
+  loadOffer   LoadOffer @relation(fields: [loadOfferId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  type LoadOfferDocumentType @default(OTHER)
+
+  fileName String
+  mimeType String?
+  fileSize Int?
+
+  url      String
+  publicId String?
+
+  notes String?
+
+  copiedToAttachmentId String?
+  copiedToAttachment   Attachment? @relation(fields: [copiedToAttachmentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loadOfferId])
+  @@index([uploadedById])
+  @@index([type])
+}
+
+model LoadFieldRevision {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  fieldName String
+
+  oldValue Json?
+  newValue Json?
+
+  changedById String?
+  changedBy   User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  changedByActorType FieldSourceActorType
+
+  reason        String?
+  sourceContext String?
+
+  createdAt DateTime @default(now())
+
+  @@index([loadId])
+  @@index([fieldName])
+  @@index([changedById])
+  @@index([changedByActorType])
+  @@index([createdAt])
+}
+
+model LoadCustomField {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  key   String
+  label String
+  value String?
+
+  status LoadCustomFieldStatus @default(ACTIVE)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  sourceActorType FieldSourceActorType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([loadId, key])
+  @@index([loadId])
+  @@index([key])
+  @@index([status])
+  @@index([createdById])
+}
+
+model LoadComment {
+  id String @id @default(uuid())
+
+  loadId String
+  load   Load   @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  authorId String?
+  author   User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  actorType FieldSourceActorType
+
+  visibility LoadCommentVisibility @default(DRIVER_DISPATCHER)
+
+  body String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loadId])
+  @@index([authorId])
+  @@index([actorType])
+  @@index([visibility])
+  @@index([createdAt])
 }
